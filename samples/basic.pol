@@ -1,0 +1,21 @@
+policy main {
+    allow {
+        execve
+    }
+
+    deny {
+        read,
+        write,
+    }
+
+    trap(10) {
+        brk,
+        allow
+    }
+}
+
+policy other {
+    terminate {
+        opensocket
+    }
+}
