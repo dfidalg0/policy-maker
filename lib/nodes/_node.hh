@@ -8,11 +8,19 @@
 class Node {
 public:
     enum class Kind {
+        // Root
+        program,
+        // Building blocks
         action,
         syscall,
         rule,
+        // Statements
         policy,
-        program,
+        // Expressions
+        unary_expr,
+        binary_expr,
+        constant,
+        identifier,
     };
 
     Node(Node::Kind kind, Position begin, Position end) : _kind(kind), _begin(begin), _end(end) {}
@@ -24,6 +32,8 @@ public:
     static std::string indent(uint indent);
 
     virtual void print(uint indent = 0) = 0;
+
+    virtual ~Node() {}
 
 private:
     Position _begin;

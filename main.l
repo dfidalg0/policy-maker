@@ -42,17 +42,21 @@ int           [0-9]+
 str           "([^"]|\\")*"|'([^']|\\')*'
 
 %%
-policy         { MAKE_TOKEN(POLICY); }
-terminate      { MAKE_TOKEN(TERMINATE); }
-allow          { MAKE_TOKEN(ALLOW); }
-deny|kill      { MAKE_TOKEN(KILL); }
-trap           { MAKE_TOKEN(TRAP); }
-error          { MAKE_TOKEN(ERROR); }
-notify         { MAKE_TOKEN(NOTIFY); }
-trace          { MAKE_TOKEN(TRACE); }
-log            { MAKE_TOKEN(LOG); }
+policy      { MAKE_TOKEN(POLICY); }
+terminate   { MAKE_TOKEN(TERMINATE); }
+allow       { MAKE_TOKEN(ALLOW); }
+deny|kill   { MAKE_TOKEN(KILL); }
+trap        { MAKE_TOKEN(TRAP); }
+error       { MAKE_TOKEN(ERROR); }
+notify      { MAKE_TOKEN(NOTIFY); }
+trace       { MAKE_TOKEN(TRACE); }
+log         { MAKE_TOKEN(LOG); }
 
-if    { MAKE_TOKEN(IF); }
+true        { MAKE_TOKEN(TRUE); }
+false       { MAKE_TOKEN(FALSE); }
+null        { MAKE_TOKEN(NIL); }
+
+if          { MAKE_TOKEN(IF); }
 
 {id}        { MAKE_TOKEN(IDENTIFIER); }
 {int}       { MAKE_TOKEN(INTEGER); }

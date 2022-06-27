@@ -2,6 +2,7 @@
 #define __SYSCALL_HH__
 
 #include <nodes/_node.hh>
+#include <nodes/_expr.hh>
 #include <string>
 
 class Syscall: public Node {
@@ -10,7 +11,7 @@ public:
         std::string name,
         Position begin,
         Position end,
-        Node * condition = nullptr
+        Expr * condition = nullptr
     ) : Node(Node::Kind::syscall, begin, end), _name(name), _condition(condition) {};
 
     ~Syscall();
@@ -19,7 +20,7 @@ public:
 
 private:
     std::string _name;
-    Node * _condition;
+    Expr * _condition;
 };
 
 #endif // __SYSCALL_HH__
