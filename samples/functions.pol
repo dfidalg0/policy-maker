@@ -1,4 +1,4 @@
-fn and(cond1, cond2) -> cond1 && cond2.
+fn and(cond1, cond2) -> cond1 && cond2;
 
 fn gte(x, y) -> x >= y;
 fn lte(x, y) -> x <= y;
