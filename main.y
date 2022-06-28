@@ -399,16 +399,16 @@ function_call:
     IDENTIFIER[name] LPAREN function_params[params] RPAREN {
         $$ = new FunctionCall(
             $name->begin(),
-            $name->end(),
+            $RPAREN->end(),
             $name->text(),
             $params
         );
     }
 
-token_keyword: IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG | TRUE | FALSE | NIL
+token_keyword: IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG | TRUE | FALSE | NIL | FUNCTION
 
 soft_keyword: token_keyword {
-    $$ = new Token(yytoken_kind_t::IDENTIFIER, $1->begin(), $1->end(), $1->text());
+    $$ = new Token(yytokentype::IDENTIFIER, $1->begin(), $1->end(), $1->text());
     delete $1;
 }
 %%

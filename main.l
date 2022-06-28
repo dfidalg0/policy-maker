@@ -41,7 +41,17 @@ rbrack        \]
 int           [0-9]+
 str           "([^"]|\\")*"|'([^']|\\')*'
 
+%x COMM M_COM
+
 %%
+\/\/        { BEGIN(COMM); }
+<COMM>\n    { BEGIN(INITIAL); ++line_start; col_start = 1; }
+<COMM>.     { ++col_start; }
+\/\*        { BEGIN(M_COM); }
+<M_COM>\*\/ { BEGIN(INITIAL); col_start += 2; }
+<M_COM>\n   { ++line_start; col_start = 1; }
+<M_COM>.    { ++col_start; }
+
 policy      { MAKE_TOKEN(POLICY); }
 terminate   { MAKE_TOKEN(TERMINATE); }
 allow       { MAKE_TOKEN(ALLOW); }
