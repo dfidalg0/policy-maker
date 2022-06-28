@@ -2,6 +2,7 @@
 
 %code requires {
     #include <string>
+    #include <sstream>
     #include <vector>
     #include <cstdio>
     #include <errors.hh>
@@ -21,13 +22,20 @@
     typedef class FunctionCall FunctionCall;
     typedef class FunctionDecl FunctionDecl;
 
+    struct ReturnValue {
+        Program * program;
+        bool success;
+
+        ReturnValue(): program(nullptr), success(true) {}
+    };
+
     static Program * program;
 
     Program * parse(const char * filename);
 
     inline BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
 
-    int yyerror(char const *);
+    int yyerror(ReturnValue *, char const *);
 
     extern "C" int yylex();
     extern char* yytext;
@@ -53,6 +61,8 @@
     std::vector<Expr *> * expr_list;
     std::vector<std::string> * args_list;
 }
+
+%parse-param { ReturnValue * ret }
 
 %token <token>
     // Basics
@@ -83,6 +93,8 @@
     unary_op
     // Boolean
     boolean
+
+%type<token> error
 
 %type<action> param_action action
 
@@ -124,7 +136,7 @@ program: stmt_list[stmts] YYEOF {
         $$ = new Program(begin, end, $stmts);
     }
 
-    program = $$;
+    ret->program = $$;
 }
 
 stmt_list:
@@ -138,15 +150,34 @@ stmt_list:
 
 stmt: policy_decl | function_decl
 
-function_decl: FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] SEMI {
-    $$ = new FunctionDecl(
-        $FUNCTION->begin(),
-        $SEMI->end(),
-        $name->text(),
-        $args,
-        $body
-    );
-}
+function_decl:
+    FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] SEMI {
+        $$ = new FunctionDecl(
+            $FUNCTION->begin(),
+            $SEMI->end(),
+            $name->text(),
+            $args,
+            $body
+        );
+    }
+    | FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] error {
+        std::stringstream err;
+
+        err << "Invalid token found at "
+            << $error->begin().line() << ":" << $error->begin().col()
+            << ": \"" << $error->text() << "\""
+            << " (Expected: ';')";
+
+        yyerror(ret, err.str().c_str());
+
+        $$ = new FunctionDecl(
+            $FUNCTION->begin(),
+            $body->end(),
+            $name->text(),
+            $args,
+            $body
+        );
+    }
 
 function_args:
     %empty {
@@ -193,10 +224,10 @@ param_action: token_param_action[token] LPAREN INTEGER[param] RPAREN {
     );
 }
 
-token_action: ALLOW | KILL  | NOTIFY | LOG | TERMINATE
+token_action: ALLOW | KILL | NOTIFY | LOG | TERMINATE
 
 action:
-      param_action
+    param_action
     | token_action[token] {
         $$ = new Action(
             Action::kind_from_token($token),
@@ -227,6 +258,21 @@ syscall:
             $condition
         );
     }
+    | syscall_name[name] IF error {
+        std::stringstream err;
+
+        err << "Syscall condition not found at "
+            << $error->begin().line() << ":" << $error->begin().col()
+            << " (Found: \"" << $error->text() << "\")";
+
+        yyerror(ret, err.str().c_str());
+
+        $$ = new Syscall(
+            $name->text(),
+            $name->begin(),
+            $name->end()
+        );
+    }
 
 syscall_list:
     syscall[current] {
@@ -234,6 +280,19 @@ syscall_list:
         $$->push_back($current);
     }
     | syscall_list[list] COMMA syscall[current] {
+        $$ = $list;
+        $$->push_back($current);
+    }
+    | syscall_list[list] error syscall[current] {
+        std::stringstream err;
+
+        err << "Invalid token found at "
+            << $error->begin().line() << ":" << $error->begin().col()
+            << ": \"" << $error->text() << "\""
+            << " (Expected: ',')";
+
+        yyerror(ret, err.str().c_str());
+
         $$ = $list;
         $$->push_back($current);
     }
@@ -418,7 +477,11 @@ soft_keyword: token_keyword {
 }
 %%
 
-int yyerror(char const * err) {
+int yyerror(ReturnValue * ret, char const * err) {
+    ret->success = false;
+
+    std::cerr << err << std::endl;
+
     return 0;
 }
 
@@ -429,14 +492,20 @@ Program * parse(const char * filename) {
         throw FileNotFoundError(filename);
     }
 
-    program = nullptr;
     yyin = file;
 
-    yyparse();
+    auto ret = new ReturnValue();
 
-    if (!program) {
+    yyparse(ret);
+    auto program = ret->program;
+
+    if (!ret->success) {
+        delete program;
+
         throw ParseError(filename);
     }
+
+    delete ret;
 
     return program;
 }
