@@ -1,4 +1,5 @@
 %{
+#include <iostream>
 #include <parser.yy.hh>
 #include <token.hh>
 
@@ -109,5 +110,16 @@ if          { MAKE_TOKEN(IF); }
 
 <<EOF>>     { MAKE_TOKEN(YYEOF); }
 
-.           { MAKE_TOKEN(YYerror); }
+.           {
+    set_token_info(tt::YYUNDEF);
+
+    auto token = yylval.token;
+    auto pos = token->begin();
+
+    std::cerr
+        << "Invalid character at " << pos.line() << ":" << pos.col() << ": '"
+        << token->text() << "'" << std::endl;
+
+    return tt::YYUNDEF;
+}
 %%

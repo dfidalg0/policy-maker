@@ -1,0 +1,16 @@
+fn and(cond1, cond2) -> cond1 && cond2.
+
+fn gte(x, y) -> x  y;
+fn lte(x, y) -> x <= y;
+
+fn isBetween(x, a, b) -> and(gte(x,a), lte(x,b));
+
+policy main {
+    allow {
+        write if isBetween(fd, 1, 2)
+    }
+
+    invalid {
+        read if,
+    }
+}

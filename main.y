@@ -1,10 +1,10 @@
 %require "3.7"
 
 %code requires {
-    #include <iostream>
     #include <string>
     #include <vector>
     #include <cstdio>
+    #include <errors.hh>
 
     typedef class Token Token;
     typedef class Action Action;
@@ -25,7 +25,7 @@
 
     Program * parse(const char * filename);
 
-    BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
+    inline BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
 
     int yyerror(char const *);
 
@@ -56,7 +56,7 @@
 
 %token <token>
     // Basics
-    POLICY IDENTIFIER
+    YYEOF POLICY IDENTIFIER
     // Delimiters
     LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK ARROW
     // Actions
@@ -113,11 +113,16 @@
 %type<args_list> function_args args_list
 
 %%
-program: stmt_list[stmts] {
-    auto begin = (*$stmts)[0]->begin();
-    auto end = (*$stmts)[$stmts->size() - 1]->end();
+program: stmt_list[stmts] YYEOF {
+    if ($stmts->empty()) {
+        $$ = new Program({ 1, 1 }, { 1, 1 }, $stmts);
+    }
+    else {
+        auto begin = (*$stmts)[0]->begin();
+        auto end = (*$stmts)[$stmts->size() - 1]->end();
 
-    $$ = new Program(begin, end, $stmts);
+        $$ = new Program(begin, end, $stmts);
+    }
 
     program = $$;
 }
@@ -421,12 +426,17 @@ Program * parse(const char * filename) {
     auto file = fopen(filename, "r");
 
     if (!file) {
-        return nullptr;
+        throw FileNotFoundError(filename);
     }
 
+    program = nullptr;
     yyin = file;
 
     yyparse();
+
+    if (!program) {
+        throw ParseError(filename);
+    }
 
     return program;
 }
