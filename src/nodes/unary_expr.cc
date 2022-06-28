@@ -4,10 +4,10 @@ UnaryExpr::~UnaryExpr() {
     delete _operand;
 }
 
-void UnaryExpr::print(uint indent) {
-    std::cout << Node::indent(indent) << "- UnaryExpr" << std::endl;
-    std::cout << Node::indent(indent + 2) << "- Operator: " << kind_to_string(_op) << std::endl;
-    _operand->print(indent + 2);
+void UnaryExpr::print(uint level) {
+    std::cout << indent(level) << "> Unary Expression" << std::endl;
+    std::cout << indent(level + 2) << "- Operator: " << kind_to_string(_op) << std::endl;
+    _operand->print(level + 2);
 }
 
 UnaryExpr::OpKind UnaryExpr::kind_from_token(Token * token) {

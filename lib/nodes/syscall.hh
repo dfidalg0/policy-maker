@@ -16,7 +16,7 @@ public:
 
     ~Syscall();
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 
 private:
     std::string _name;

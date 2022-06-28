@@ -21,7 +21,7 @@ public:
     inline std::vector<std::string> args() const { return *_args; }
     inline Expr* body() const { return _body; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 };
 
 #endif // __FUNCTION_DECL_HH__

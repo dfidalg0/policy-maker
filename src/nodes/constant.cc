@@ -1,7 +1,7 @@
 #include <nodes/constant.hh>
 
 void Constant::print(uint level) {
-    std::cout << indent(level) << "- Constant: \n";
+    std::cout << indent(level) << "> Constant: \n";
     std::cout << indent(level + 2) << "- Type: " << type_to_string(_type) << std::endl;
     std::cout << indent(level + 2) << "- Value: " << _value << std::endl;
 }

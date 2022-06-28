@@ -37,7 +37,7 @@ public:
     inline Expr * operand() const { return _operand; }
     inline OpKind op() const { return _op; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 
     ~UnaryExpr() override;
 };

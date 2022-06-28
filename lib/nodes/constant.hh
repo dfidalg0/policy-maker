@@ -27,7 +27,7 @@ public:
     inline std::string value() const { return _value; }
     inline Type type() const { return _type; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 };
 
 #endif // __CONSTANT_HH__

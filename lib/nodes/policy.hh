@@ -23,7 +23,7 @@ public:
     inline std::string name() { return _name; }
     inline std::vector<Rule *> rules() { return *_rules; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 };
 
 #endif // __POLICY_HH__

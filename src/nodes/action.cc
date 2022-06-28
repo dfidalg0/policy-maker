@@ -28,9 +28,9 @@ std::string Action::kind_to_string(Kind kind) {
     }
 }
 
-void Action::print(uint indent) {
-    std::cout << Node::indent(indent) << "- Action: " << kind_to_string(_action_kind) << std::endl;
+void Action::print(uint level) {
+    std::cout << indent(level) << "> Action: " << kind_to_string(_action_kind) << std::endl;
     if (_param != -1) {
-        std::cout << Node::indent(indent + 2) << "- Param: " << _param << std::endl;
+        std::cout << indent(level + 2) << "- Param: " << _param << std::endl;
     }
 }

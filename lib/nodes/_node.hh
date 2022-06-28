@@ -33,7 +33,7 @@ public:
 
     static std::string indent(uint indent);
 
-    virtual void print(uint indent = 0) = 0;
+    virtual void print(uint level = 0) = 0;
 
     virtual ~Node() {}
 

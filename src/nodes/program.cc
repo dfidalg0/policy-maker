@@ -9,7 +9,7 @@ Program::~Program() {
 }
 
 void Program::print(uint level) {
-    std::cout << indent(level) << "- Program: " << std::endl;
+    std::cout << indent(level) << "> Program: " << std::endl;
 
     if (_stmts->empty()) {
         std::cout << indent(level + 2) << "No statements" << std::endl;

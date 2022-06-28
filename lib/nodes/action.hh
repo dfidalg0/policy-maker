@@ -35,7 +35,7 @@ public:
     inline Kind action_kind() const { return _action_kind; }
     inline int param() const { return _param; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 
 private:
     Kind _action_kind;

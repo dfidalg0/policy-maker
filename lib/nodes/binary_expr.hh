@@ -56,7 +56,7 @@ public:
     inline Expr * right() const { return _right; }
     inline OpKind op() const { return _op; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 
     ~BinaryExpr() override;
 };

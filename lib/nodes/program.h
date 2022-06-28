@@ -19,7 +19,7 @@ public:
 
     inline std::vector<Stmt *> stmts() { return *_stmts; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 };
 
 #endif // __PROGRAM_HH__

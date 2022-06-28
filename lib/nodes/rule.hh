@@ -19,7 +19,7 @@ public:
     inline Action * action() { return _action; }
     inline std::vector<Syscall *> syscalls() { return *_syscalls; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 };
 
 #endif // __RULE_HH__

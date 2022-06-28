@@ -6,11 +6,11 @@ Syscall::~Syscall() {
     delete _condition;
 }
 
-void Syscall::print(uint indent) {
-    std::cout << Node::indent(indent) << "- Syscall: " << _name << std::endl;
+void Syscall::print(uint level) {
+    std::cout << indent(level) << "> Syscall: " << _name << std::endl;
 
     if (!_condition) return;
 
-    std::cout << Node::indent(indent + 2) << "- Condition: " << std::endl;
-    _condition->print(indent + 4);
+    std::cout << indent(level + 2) << "- Condition: " << std::endl;
+    _condition->print(level + 4);
 }

@@ -16,7 +16,7 @@ public:
     inline std::string name() const { return _name; }
     inline std::vector<Expr*> args() const { return *_args; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 
     ~FunctionCall() override;
 };

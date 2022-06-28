@@ -15,7 +15,7 @@ public:
 
     inline std::string name() const { return _name; }
 
-    void print(uint indent = 0) override;
+    void print(uint level = 0) override;
 };
 
 #endif // __IDENTIFIER_HH__
