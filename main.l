@@ -51,6 +51,7 @@ error       { MAKE_TOKEN(ERROR); }
 notify      { MAKE_TOKEN(NOTIFY); }
 trace       { MAKE_TOKEN(TRACE); }
 log         { MAKE_TOKEN(LOG); }
+fn          { MAKE_TOKEN(FUNCTION); }
 
 true        { MAKE_TOKEN(TRUE); }
 false       { MAKE_TOKEN(FALSE); }
@@ -62,6 +63,7 @@ if          { MAKE_TOKEN(IF); }
 {int}       { MAKE_TOKEN(INTEGER); }
 {str}       { MAKE_TOKEN(STRING); }
 
+-\>         { MAKE_TOKEN(ARROW); }
 {rbrace}    { MAKE_TOKEN(RBRACE); }
 {lbrace}    { MAKE_TOKEN(LBRACE); }
 {rparen}    { MAKE_TOKEN(RPAREN); }
@@ -90,6 +92,7 @@ if          { MAKE_TOKEN(IF); }
 \|\|        { MAKE_TOKEN(LOGICAL_OR); }
 ~           { MAKE_TOKEN(NOT); }
 !           { MAKE_TOKEN(LOGICAL_NOT); }
+\;          { MAKE_TOKEN(SEMI); }
 
 \n          { line_start++; col_start = 1; }
 [[:space:]] { col_start++; }

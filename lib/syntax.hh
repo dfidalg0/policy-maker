@@ -10,8 +10,10 @@
 #include <nodes/rule.hh>
 // Statements
 #include <nodes/policy.hh>
+#include <nodes/function_decl.hh>
 // Expressions
 #include <nodes/unary_expr.hh>
 #include <nodes/binary_expr.hh>
 #include <nodes/constant.hh>
-#include <nodes/identifier.hh>
+#include <nodes/variable.hh>
+#include <nodes/function_call.hh>

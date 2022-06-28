@@ -1,0 +1,6 @@
+policy main {
+    allow {
+        write if fd == 0,
+        read if fd >= 1 && fd <= 2,
+    }
+}

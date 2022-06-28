@@ -16,11 +16,13 @@ public:
         rule,
         // Statements
         policy,
+        function_decl,
         // Expressions
         unary_expr,
         binary_expr,
         constant,
         identifier,
+        function_call,
     };
 
     Node(Node::Kind kind, Position begin, Position end) : _kind(kind), _begin(begin), _end(end) {}

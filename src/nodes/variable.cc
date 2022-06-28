@@ -1,4 +1,4 @@
-#include <nodes/identifier.hh>
+#include <nodes/variable.hh>
 
 void Variable::print(uint level) {
     std::cout << indent(level) << "- Variable: \n";

@@ -1,6 +1,8 @@
 %require "3.7"
 
 %code requires {
+    #include <iostream>
+    #include <string>
     #include <vector>
     #include <cstdio>
 
@@ -16,6 +18,8 @@
     typedef class UnaryExpr UnaryExpr;
     typedef class Constant Constant;
     typedef class Variable Variable;
+    typedef class FunctionCall FunctionCall;
+    typedef class FunctionDecl FunctionDecl;
 
     static Program * program;
 
@@ -36,6 +40,7 @@
 }
 
 %union {
+    Program * program;
     Token * token;
     Action * action;
     Syscall * syscall;
@@ -44,21 +49,22 @@
     std::vector<Rule *> * rule_list;
     Stmt * stmt;
     std::vector<Stmt *> * stmt_list;
-    Program * program;
     Expr * expr;
+    std::vector<Expr *> * expr_list;
+    std::vector<std::string> * args_list;
 }
 
 %token <token>
     // Basics
     POLICY IDENTIFIER
     // Delimiters
-    LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK
+    LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK ARROW
     // Actions
     ALLOW KILL TRAP ERROR NOTIFY TRACE LOG TERMINATE
     // Keywords
-    IF
+    IF FUNCTION
     // Separators
-    COMMA
+    COMMA SEMI
     // Binary operators
     ADD SUB MUL DIV MOD AND OR XOR LSH RSH
     // Logical binary operators
@@ -88,7 +94,7 @@
 
 %type<rule_list> policy_body
 
-%type<stmt> stmt policy_decl
+%type<stmt> stmt policy_decl function_decl
 
 %type<stmt_list> stmt_list
 
@@ -100,7 +106,11 @@
     // Expression groups
     p1_expr p2_expr p3_expr p4_expr p5_expr p6_expr p7_expr p8_expr p9_expr p10_expr
     // Base expressions
-    unary_expr base_expr constant
+    unary_expr base_expr constant function_call
+
+%type<expr_list> expr_list function_params
+
+%type<args_list> function_args args_list
 
 %%
 program: stmt_list[stmts] {
@@ -121,7 +131,34 @@ stmt_list:
         $$->push_back($current);
     }
 
-stmt: policy_decl
+stmt: policy_decl | function_decl
+
+function_decl: FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] SEMI {
+    $$ = new FunctionDecl(
+        $FUNCTION->begin(),
+        $SEMI->end(),
+        $name->text(),
+        $args,
+        $body
+    );
+}
+
+function_args:
+    %empty {
+        $$ = new std::vector<std::string>();
+    }
+    | args_list optional_comma
+
+args_list:
+    IDENTIFIER[current] {
+        $$ = new std::vector<std::string>();
+        $$->push_back($current->text());
+    }
+    | args_list[list] COMMA IDENTIFIER[current] {
+        $$ = $list;
+        $$->push_back($current->text());
+    }
+
 
 policy_decl: POLICY IDENTIFIER[name] LBRACE policy_body[body] RBRACE {
     auto begin = $POLICY->begin();
@@ -302,6 +339,7 @@ base_expr:
             $id->end()
         );
     }
+    | function_call
 
 boolean: TRUE | FALSE
 
@@ -336,6 +374,34 @@ constant:
             $value->text(),
             $value->begin(),
             $value->end()
+        );
+    }
+
+expr_list:
+    expr[current] {
+        $$ = new std::vector<Expr *>();
+        $$->push_back($current);
+    }
+    | expr_list[list] COMMA expr[current] {
+        $$ = $list;
+        $$->push_back($current);
+    }
+
+function_params:
+    %empty {
+        $$ = new std::vector<Expr *>();
+    }
+    | expr_list[params] optional_comma {
+        $$ = $params;
+    }
+
+function_call:
+    IDENTIFIER[name] LPAREN function_params[params] RPAREN {
+        $$ = new FunctionCall(
+            $name->begin(),
+            $name->end(),
+            $name->text(),
+            $params
         );
     }
 

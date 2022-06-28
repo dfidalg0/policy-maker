@@ -16,6 +16,6 @@ policy main {
 
 policy other {
     terminate {
-        opensocket
+        socket
     }
 }
