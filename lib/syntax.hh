@@ -3,7 +3,7 @@
 #include <nodes/_stmt.hh>
 #include <nodes/_expr.hh>
 // Root
-#include <nodes/program.h>
+#include <nodes/program.hh>
 // Building blocks
 #include <nodes/action.hh>
 #include <nodes/syscall.hh>

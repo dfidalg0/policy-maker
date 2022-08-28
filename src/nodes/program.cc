@@ -1,4 +1,4 @@
-#include <nodes/program.h>
+#include <nodes/program.hh>
 
 Program::~Program() {
     for (auto stmt : *_stmts) {
