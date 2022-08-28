@@ -9,6 +9,9 @@
 class UnaryExpr : public Expr {
 public:
     enum class OpKind {
+        // Arithmetic
+        neg,
+        pos,
         // Bitwise
         bit_not,
         // Logical

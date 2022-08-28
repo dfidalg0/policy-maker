@@ -13,7 +13,7 @@ src/lexer.yy.cc: main.l
 	flex -o src/lexer.yy.cc main.l
 
 src/parser.yy.cc lib/parser.yy.hh: main.y
-	bison -d main.y -o src/parser.yy.cc && mv src/parser.yy.hh lib/
+	bison -Wno-other -d main.y -o src/parser.yy.cc && mv src/parser.yy.hh lib/
 
 bin:
 	mkdir bin

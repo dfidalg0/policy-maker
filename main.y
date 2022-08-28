@@ -35,7 +35,7 @@
 
     inline BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
 
-    int yyerror(ReturnValue *, char const *);
+    void yyerror(ReturnValue *, char const *);
 
     extern "C" int yylex();
     extern char* yytext;
@@ -46,6 +46,8 @@
     #include <token.hh>
     #include <syntax.hh>
 }
+
+%define parse.error detailed
 
 %union {
     Program * program;
@@ -63,6 +65,9 @@
 }
 
 %parse-param { ReturnValue * ret }
+
+%destructor { delete $$; } <*>
+%destructor {} <program>
 
 %token <token>
     // Basics
@@ -93,8 +98,6 @@
     unary_op
     // Boolean
     boolean
-
-%type<token> error
 
 %type<action> param_action action
 
@@ -161,15 +164,6 @@ function_decl:
         );
     }
     | FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] error {
-        std::stringstream err;
-
-        err << "Invalid token found at "
-            << $error->begin().line() << ":" << $error->begin().col()
-            << ": \"" << $error->text() << "\""
-            << " (Expected: ';')";
-
-        yyerror(ret, err.str().c_str());
-
         $$ = new FunctionDecl(
             $FUNCTION->begin(),
             $body->end(),
@@ -259,14 +253,6 @@ syscall:
         );
     }
     | syscall_name[name] IF error {
-        std::stringstream err;
-
-        err << "Syscall condition not found at "
-            << $error->begin().line() << ":" << $error->begin().col()
-            << " (Found: \"" << $error->text() << "\")";
-
-        yyerror(ret, err.str().c_str());
-
         $$ = new Syscall(
             $name->text(),
             $name->begin(),
@@ -284,15 +270,6 @@ syscall_list:
         $$->push_back($current);
     }
     | syscall_list[list] error syscall[current] {
-        std::stringstream err;
-
-        err << "Invalid token found at "
-            << $error->begin().line() << ":" << $error->begin().col()
-            << ": \"" << $error->text() << "\""
-            << " (Expected: ',')";
-
-        yyerror(ret, err.str().c_str());
-
         $$ = $list;
         $$->push_back($current);
     }
@@ -378,7 +355,7 @@ p10_expr:
     }
     | unary_expr
 
-unary_op: NOT | LOGICAL_NOT
+unary_op: NOT | LOGICAL_NOT | ADD | SUB
 
 unary_expr:
     unary_op[op] base_expr[expr] {
@@ -476,13 +453,10 @@ soft_keyword: token_keyword {
     delete $1;
 }
 %%
-
-int yyerror(ReturnValue * ret, char const * err) {
+void yyerror(ReturnValue * ret, char const * err) {
     ret->success = false;
 
     std::cerr << err << std::endl;
-
-    return 0;
 }
 
 Program * parse(const char * filename) {
@@ -498,14 +472,15 @@ Program * parse(const char * filename) {
 
     yyparse(ret);
     auto program = ret->program;
+    auto success = ret->success;
 
-    if (!ret->success) {
+    delete ret;
+
+    if (!success) {
         delete program;
 
         throw ParseError(filename);
     }
-
-    delete ret;
 
     return program;
 }
