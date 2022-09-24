@@ -1,22 +1,28 @@
+INPUTS := $(shell find src -name '*.cc')
+HEADERS := $(shell find lib -name '*.hh')
+
 all: compiler
 
 compiler: bin/compiler
 
-lexer: src/lexer.yy.cc
+target:
+	mkdir target
 
-parser: src/parser.yy.cc lib/parser.yy.hh
+lexer: target/lexer.yy.cc
 
-bin/compiler: main.cc src/*.cc src/nodes/*.cc lib/*.hh lib/nodes/**.hh lib/parser.yy.hh src/parser.yy.cc src/lexer.yy.cc | bin
-	g++ -lfl -I lib main.cc src/*.cc src/nodes/*.cc -o bin/compiler
+parser: target/parser.yy.cc target/parser.yy.hh
 
-src/lexer.yy.cc: main.l
-	flex -o src/lexer.yy.cc main.l
+target/lexer.yy.cc: src/lexicon/main.l | target
+	flex -o target/lexer.yy.cc src/lexicon/main.l
 
-src/parser.yy.cc lib/parser.yy.hh: main.y
-	bison -Wno-other -d main.y -o src/parser.yy.cc && mv src/parser.yy.hh lib/
+target/parser.yy.cc target/parser.yy.hh: src/syntax/main.y | target
+	bison -Wno-other -d src/syntax/main.y -o target/parser.yy.cc
 
 bin:
 	mkdir bin
 
+bin/compiler: lexer parser $(INPUTS) $(HEADERS) | bin
+	g++ -lfl -I lib -I target $(INPUTS) target/**.cc -o bin/compiler
+
 clean:
-	rm -rf bin src/*.yy.cc lib/*.yy.hh
+	rm -rf bin target

@@ -1,6 +1,3 @@
 {
-    "C_Cpp.default.includePath": [
-        "./lib"
-    ],
     "C_Cpp.autoAddFileAssociations": false
 }
