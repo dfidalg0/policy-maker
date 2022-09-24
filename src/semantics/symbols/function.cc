@@ -2,32 +2,37 @@
 #include <semantics/symbols/function.hh>
 #include <semantics/symbols/variable.hh>
 
-semantics::Function::Function(
+using namespace semantics;
+
+Function::Function(
     FunctionDecl * decl,
     Scope * scope
 ) : Symbol(Kind::function, decl->name()) {
     _body = decl->body();
     _decl_scope = scope;
-    _local_scope = new Scope(_decl_scope);
 
-    for (auto arg: decl->args()) {
-        auto var = new Variable(arg);
-        _local_scope->add(var);
-    }
+    _args = decl->args();
 
     validate();
 }
 
-void semantics::Function::validate(Expr * expr) {
+void Function::validate(Expr * expr) {
     using kind = Expr::Kind;
 
     if (expr == nullptr) expr = _body;
+
+    auto local_scope = new Scope(_decl_scope);
+
+    for (auto arg : _args) {
+        auto var = new Variable(arg);
+        local_scope->add(var);
+    }
 
     switch (expr->kind()) {
         case kind::function_call: {
             auto call = (FunctionCall*) expr;
             auto name = call->name();
-            auto symbol = _local_scope->find(name);
+            auto symbol = local_scope->find(name);
 
             if (symbol == nullptr) {
                 throw std::runtime_error("Function not defined");
@@ -42,7 +47,7 @@ void semantics::Function::validate(Expr * expr) {
         case kind::variable: {
             auto variable = (::Variable*)expr;
             auto name = variable->name();
-            auto symbol = _local_scope->find(name);
+            auto symbol = local_scope->find(name);
 
             if (symbol == nullptr) {
                 throw std::runtime_error("Variable not defined");
@@ -66,4 +71,28 @@ void semantics::Function::validate(Expr * expr) {
             break;
         }
     }
+
+    delete local_scope;
 };
+
+Expr * Function::call(std::vector<Expr*> args) {
+    auto local_scope = new Scope(_decl_scope);
+
+    if (args.size() < _args.size()) {
+        throw std::runtime_error("Invalid number of arguments");
+    }
+
+    for (int i = 0; i < _args.size(); i++) {
+        auto arg = _args[i];
+        auto value = args[i];
+
+        auto var = new Variable(arg, value);
+        local_scope->add(var);
+    }
+
+    auto result = local_scope->evaluate(_body);
+
+    delete local_scope;
+
+    return result;
+}

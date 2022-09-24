@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <syntax/nodes.hh>
 
 #include "symbols/_symbol.hh"
 
@@ -12,6 +13,8 @@ public:
 
     Scope add(Symbol* symbol);
     Symbol* find(std::string name);
+
+    Expr * evaluate(Expr * expr);
 private:
     Scope * _parent;
     std::unordered_map<std::string, Symbol*> _symbols;
