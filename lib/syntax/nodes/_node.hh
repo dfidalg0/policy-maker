@@ -21,7 +21,7 @@ public:
         unary_expr,
         binary_expr,
         constant,
-        identifier,
+        variable,
         function_call,
     };
 

@@ -9,7 +9,7 @@ private:
 
 public:
     Variable(std::string name, Position begin, Position end)
-        : Expr(Node::Kind::identifier, begin, end), _name(name) {}
+        : Expr(Node::Kind::variable, begin, end), _name(name) {}
 
     ~Variable() {}
 

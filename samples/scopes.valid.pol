@@ -1,0 +1,3 @@
+fn valid(a) -> a;
+
+fn another_valid(a) -> valid(a);

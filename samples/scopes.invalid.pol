@@ -1,0 +1,3 @@
+fn invalid(a) -> valid(a);
+
+fn valid(a) -> a;
