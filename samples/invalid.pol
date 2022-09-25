@@ -7,7 +7,7 @@ fn isBetween(x, a, b) -> and(gte(x,a), lte(x,b));
 
 policy main {
     allow {
-        write if isBetween(fd, 1, 2),
+        write if isBetween(:fd, 1, 2),
         execve if
     }
 }

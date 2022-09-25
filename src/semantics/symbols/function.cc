@@ -16,23 +16,14 @@ Function::Function(
     validate();
 }
 
-void Function::validate(Expr * expr) {
+static void validate_expr(Scope * scope, Expr * expr) {
     using kind = Expr::Kind;
-
-    if (expr == nullptr) expr = _body;
-
-    auto local_scope = new Scope(_decl_scope);
-
-    for (auto arg : _args) {
-        auto var = new Variable(arg);
-        local_scope->add(var);
-    }
 
     switch (expr->kind()) {
         case kind::function_call: {
-            auto call = (FunctionCall*) expr;
+            auto call = (FunctionCall*)expr;
             auto name = call->name();
-            auto symbol = local_scope->find(name);
+            auto symbol = scope->find(name);
 
             if (symbol == nullptr) {
                 throw std::runtime_error("Function not defined");
@@ -47,7 +38,7 @@ void Function::validate(Expr * expr) {
         case kind::variable: {
             auto variable = (::Variable*)expr;
             auto name = variable->name();
-            auto symbol = local_scope->find(name);
+            auto symbol = scope->find(name);
 
             if (symbol == nullptr) {
                 throw std::runtime_error("Variable not defined");
@@ -60,16 +51,39 @@ void Function::validate(Expr * expr) {
             break;
         }
         case kind::unary_expr: {
-            auto unary = (UnaryExpr*) expr;
-            validate(unary->operand());
+            auto unary = (UnaryExpr*)expr;
+            validate_expr(scope, unary->operand());
             break;
         }
         case kind::binary_expr: {
-            auto binary = (BinaryExpr*) expr;
-            validate(binary->left());
-            validate(binary->right());
+            auto binary = (BinaryExpr*)expr;
+            validate_expr(scope, binary->left());
+            validate_expr(scope, binary->right());
             break;
         }
+        case kind::syscall_param: {
+            throw std::runtime_error(
+                "Syscall param not allowed inside function body");
+        }
+    }
+}
+
+void Function::validate(Expr * expr) {
+    if (expr == nullptr) expr = _body;
+
+    auto local_scope = new Scope(_decl_scope);
+
+    for (auto arg : _args) {
+        auto var = new Variable(arg);
+        local_scope->add(var);
+    }
+
+    try {
+        validate_expr(local_scope, expr);
+    }
+    catch (std::runtime_error & e) {
+        delete local_scope;
+        throw e;
     }
 
     delete local_scope;

@@ -33,6 +33,7 @@ inline static void set_token_info(tt type) {
 %}
 
 id            [a-zA-Z_][a-zA-Z0-9_]*
+sc_param      :([0-9]+|[a-z_]+)
 lbrace        \{
 rbrace        \}
 lparen        \(
@@ -70,6 +71,7 @@ null        { MAKE_TOKEN(NIL); }
 
 if          { MAKE_TOKEN(IF); }
 
+{sc_param}  { MAKE_TOKEN(SYSCALL_PARAM); }
 {id}        { MAKE_TOKEN(IDENTIFIER); }
 {int}       { MAKE_TOKEN(INTEGER); }
 {str}       { MAKE_TOKEN(STRING); }

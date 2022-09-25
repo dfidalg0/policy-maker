@@ -18,6 +18,7 @@
     typedef class BinaryExpr BinaryExpr;
     typedef class UnaryExpr UnaryExpr;
     typedef class Constant Constant;
+    typedef class SyscallParam SyscallParam;
     typedef class Variable Variable;
     typedef class VariableDecl VariableDecl;
     typedef class FunctionCall FunctionCall;
@@ -72,7 +73,7 @@
 
 %token <token>
     // Basics
-    YYEOF POLICY IDENTIFIER
+    YYEOF POLICY IDENTIFIER SYSCALL_PARAM
     // Delimiters
     LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK ARROW
     // Actions
@@ -388,6 +389,13 @@ base_expr:
     | IDENTIFIER[id] {
         $$ = new Variable(
             $id->text(),
+            $id->begin(),
+            $id->end()
+        );
+    }
+    | SYSCALL_PARAM[id] {
+        $$ = new SyscallParam(
+            $id->text().substr(1),
             $id->begin(),
             $id->end()
         );

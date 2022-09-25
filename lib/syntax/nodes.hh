@@ -16,5 +16,6 @@
 #include "nodes/constant.hh"
 #include "nodes/function_call.hh"
 #include "nodes/unary_expr.hh"
+#include "nodes/syscall_param.hh"
 #include "nodes/variable.hh"
 #include "nodes/variable_decl.hh"

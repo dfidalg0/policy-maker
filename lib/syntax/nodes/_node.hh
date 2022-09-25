@@ -22,6 +22,7 @@ public:
         unary_expr,
         binary_expr,
         constant,
+        syscall_param,
         variable,
         function_call,
     };
