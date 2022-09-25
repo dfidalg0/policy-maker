@@ -18,6 +18,9 @@ public:
 private:
     Scope * _parent;
     std::unordered_map<std::string, Symbol*> _symbols;
+
+    Expr * simplify(UnaryExpr *);
+    Expr * simplify(BinaryExpr *);
 };
 
 #endif // __SEMANTICS_SCOPE_HH__

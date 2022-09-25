@@ -76,26 +76,128 @@ Expr * Scope::evaluate(Expr * expr) {
         case Expr::Kind::unary_expr: {
             auto unary = (UnaryExpr*) expr;
 
-            return new UnaryExpr(
-                evaluate(unary->operand()),
-                unary->op(),
-                unary->begin(),
-                unary->end()
-            );
+            return simplify(unary);
         }
         case Expr::Kind::binary_expr: {
             auto binary = (BinaryExpr*) expr;
 
-            return new BinaryExpr(
-                evaluate(binary->left()),
-                evaluate(binary->right()),
-                binary->op(),
-                binary->begin(),
-                binary->end()
-            );
+            return simplify(binary);
         }
         default: {
             return expr;
         }
     }
+}
+
+Expr * Scope::simplify(UnaryExpr * unary) {
+    using type = Constant::Type;
+    using opKind = UnaryExpr::OpKind;
+
+    auto operand = evaluate(unary->operand());
+    auto op = unary->op();
+    auto begin = unary->begin();
+    auto end = unary->end();
+
+    if (operand->kind() != Expr::Kind::constant) {
+        return new UnaryExpr(
+            operand,
+            op,
+            begin,
+            end
+        );
+    }
+
+    auto constant = (Constant *) operand;
+
+    switch (constant->type()) {
+        case type::integer: {
+            auto value = std::stoi(constant->value());
+
+            switch (op) {
+                case opKind::neg: {
+                    return new Constant(
+                        type::integer, std::to_string(-value), begin, end
+                    );
+                }
+                case opKind::pos: {
+                    return new Constant(
+                        type::integer, std::to_string(+value), begin, end
+                    );
+                }
+                case opKind::bit_not: {
+                    return new Constant(
+                        type::integer, std::to_string(~value), begin, end
+                    );
+                }
+                case opKind::lnot: {
+                    return new Constant(
+                        type::boolean, std::to_string(!value), begin, end
+                    );
+                }
+            }
+        }
+        case type::boolean: {
+            auto raw = constant->value();
+            auto value = raw == "1" || raw == "true";
+
+            switch (op) {
+                case opKind::neg: {
+                    return new Constant(
+                        type::integer, std::to_string(-value), begin, end
+                    );
+                }
+                case opKind::pos: {
+                    return new Constant(
+                        type::integer, std::to_string(+value), begin, end
+                    );
+                }
+                case opKind::bit_not: {
+                    return new Constant(
+                        type::integer, std::to_string(~value), begin, end
+                    );
+                }
+                case opKind::lnot: {
+                    return new Constant(
+                        type::boolean, std::to_string(!value), begin, end
+                    );
+                }
+            }
+        }
+        case type::null: {
+            switch(op) {
+                case opKind::lnot: {
+                    return new Constant(
+                        type::boolean, "true", begin, end
+                    );
+                }
+                default: {
+                    throw std::runtime_error("Invalid operation");
+                }
+            }
+        }
+        default: {
+            auto value = constant->value();
+
+            switch (op) {
+                case opKind::lnot: {
+                    return new Constant(
+                        type::boolean, std::to_string(!value.empty()), begin, end
+                    );
+                }
+                default: {
+                    throw std::runtime_error("Invalid operation");
+                }
+            }
+        }
+    }
+}
+
+Expr * Scope::simplify(BinaryExpr * binary) {
+    auto left = evaluate(binary->left());
+    auto right = evaluate(binary->right());
+    auto op = binary->op();
+    auto begin = binary->begin();
+    auto end = binary->end();
+
+    return new BinaryExpr(left, right, op, begin, end);
 }
