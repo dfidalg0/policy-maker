@@ -17,6 +17,7 @@ public:
         // Statements
         policy,
         function_decl,
+        variable_decl,
         // Expressions
         unary_expr,
         binary_expr,

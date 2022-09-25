@@ -17,3 +17,4 @@
 #include "nodes/function_call.hh"
 #include "nodes/unary_expr.hh"
 #include "nodes/variable.hh"
+#include "nodes/variable_decl.hh"

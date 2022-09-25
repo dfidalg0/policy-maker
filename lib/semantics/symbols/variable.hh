@@ -2,9 +2,9 @@
 #define __SEMANTICS_SYMBOLS_VARIABLE_HH__
 
 #include <string>
+#include <syntax/nodes/_expr.hh>
 
 #include "_symbol.hh"
-#include <syntax/nodes/_expr.hh>
 
 namespace semantics {
     class Variable : public Symbol {

@@ -1,3 +1,5 @@
-fn valid(a) -> a;
+x = 10;
+
+fn valid(a) -> x + a;
 
 fn another_valid(a) -> valid(a);

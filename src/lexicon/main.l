@@ -83,6 +83,7 @@ if          { MAKE_TOKEN(IF); }
 {lbrack}    { MAKE_TOKEN(LBRACK); }
 ,           { MAKE_TOKEN(COMMA); }
 
+\=          { MAKE_TOKEN(ASSIGN); }
 \+          { MAKE_TOKEN(ADD); }
 -           { MAKE_TOKEN(SUB); }
 \*          { MAKE_TOKEN(MUL); }

@@ -19,6 +19,7 @@
     typedef class UnaryExpr UnaryExpr;
     typedef class Constant Constant;
     typedef class Variable Variable;
+    typedef class VariableDecl VariableDecl;
     typedef class FunctionCall FunctionCall;
     typedef class FunctionDecl FunctionDecl;
 
@@ -90,6 +91,8 @@
     LOGICAL_NOT
     // Literals
     INTEGER STRING TRUE FALSE NIL
+    // Assignment
+    ASSIGN
 
 %type<token>
     soft_keyword token_keyword syscall_name token_action token_param_action
@@ -109,7 +112,7 @@
 
 %type<rule_list> policy_body
 
-%type<stmt> stmt policy_decl function_decl
+%type<stmt> stmt policy_decl function_decl variable_decl
 
 %type<stmt_list> stmt_list
 
@@ -151,7 +154,16 @@ stmt_list:
         $$->push_back($current);
     }
 
-stmt: policy_decl | function_decl
+stmt: policy_decl | function_decl | variable_decl
+
+variable_decl: IDENTIFIER[name] ASSIGN expr[value] SEMI {
+    $$ = new VariableDecl(
+        $name->text(),
+        $value,
+        $name->begin(),
+        $SEMI->end()
+    );
+}
 
 function_decl:
     FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] SEMI {
