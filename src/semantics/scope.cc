@@ -1,8 +1,113 @@
 #include <stdexcept>
+#include <syntax.hh>
 #include <semantics.hh>
 #include <algorithm>
+#include <semantics/operations.h>
 
 using namespace semantics;
+
+template <class L, class R>
+static Constant *operate(Constant *a, BinaryExpr::OpKind op, Constant *b) {
+    L left = *a;
+    R right = *b;
+
+    using opKind = BinaryExpr::OpKind;
+
+    switch (op) {
+        case opKind::add:
+            return new Constant(
+                add(left, right),
+                a->begin(),
+                b->end());
+        case opKind::sub:
+            return new Constant(
+                subtract(left, right),
+                a->begin(),
+                b->end());
+        case opKind::mul:
+            return new Constant(
+                multiply(left, right),
+                a->begin(),
+                b->end());
+        case opKind::div:
+            return new Constant(
+                divide(left, right),
+                a->begin(),
+                b->end());
+        case opKind::mod:
+            return new Constant(
+                modulo(left, right),
+                a->begin(),
+                b->end());
+        case opKind::bit_and:
+            return new Constant(
+                bit_and(left, right),
+                a->begin(),
+                b->end());
+        case opKind::bit_or:
+            return new Constant(
+                bit_or(left, right),
+                a->begin(),
+                b->end());
+        case opKind::bit_xor:
+            return new Constant(
+                bit_xor(left, right),
+                a->begin(),
+                b->end());
+        case opKind::bit_lsh:
+            return new Constant(
+                bit_lsh(left, right),
+                a->begin(),
+                b->end());
+        case opKind::bit_rsh:
+            return new Constant(
+                bit_rsh(left, right),
+                a->begin(),
+                b->end());
+        case opKind::eq:
+            return new Constant(
+                equal(left, right),
+                a->begin(),
+                b->end());
+        case opKind::ne:
+            return new Constant(
+                not_equal(left, right),
+                a->begin(),
+                b->end());
+        case opKind::lt:
+            return new Constant(
+                less_than(left, right),
+                a->begin(),
+                b->end());
+        case opKind::le:
+            return new Constant(
+                less_than_equal(left, right),
+                a->begin(),
+                b->end());
+        case opKind::gt:
+            return new Constant(
+                greater_than(left, right),
+                a->begin(),
+                b->end());
+        case opKind::ge:
+            return new Constant(
+                greater_than_equal(left, right),
+                a->begin(),
+                b->end());
+        case opKind::land:
+            return new Constant(
+                logical_and(left, right),
+                a->begin(),
+                b->end());
+        case opKind::lor:
+            return new Constant(
+                logical_or(left, right),
+                a->begin(),
+                b->end());
+        default:
+            throw std::runtime_error("Invalid operation");
+    }
+}
 
 Scope Scope::add(Symbol* symbol) {
     auto name = symbol->name();
@@ -111,64 +216,45 @@ Expr * Scope::simplify(UnaryExpr * unary) {
 
     switch (constant->type()) {
         case type::integer: {
-            auto value = std::stoi(constant->value());
+            int value = *constant;
 
             switch (op) {
                 case opKind::neg: {
-                    return new Constant(
-                        type::integer, std::to_string(-value), begin, end
-                    );
+                    return new Constant(-value, begin, end);
                 }
                 case opKind::pos: {
-                    return new Constant(
-                        type::integer, std::to_string(+value), begin, end
-                    );
+                    return new Constant(+value, begin, end);
                 }
                 case opKind::bit_not: {
-                    return new Constant(
-                        type::integer, std::to_string(~value), begin, end
-                    );
+                    return new Constant(~value, begin, end);
                 }
                 case opKind::lnot: {
-                    return new Constant(
-                        type::boolean, std::to_string(!value), begin, end
-                    );
+                    return new Constant(!value, begin, end);
                 }
             }
         }
         case type::boolean: {
-            auto raw = constant->value();
-            auto value = raw == "1" || raw == "true";
+            bool value = *constant;
 
             switch (op) {
                 case opKind::neg: {
-                    return new Constant(
-                        type::integer, std::to_string(-value), begin, end
-                    );
+                    return new Constant(-value, begin, end);
                 }
                 case opKind::pos: {
-                    return new Constant(
-                        type::integer, std::to_string(+value), begin, end
-                    );
+                    return new Constant(+value, begin, end);
                 }
                 case opKind::bit_not: {
-                    return new Constant(
-                        type::integer, std::to_string(~value), begin, end
-                    );
+                    return new Constant(~value, begin, end);
                 }
                 case opKind::lnot: {
-                    return new Constant(
-                        type::boolean, std::to_string(!value), begin, end
-                    );
+                    return new Constant(!value, begin, end);
                 }
             }
         }
         case type::null: {
             switch(op) {
                 case opKind::lnot: {
-                    return new Constant(
-                        type::boolean, "true", begin, end
-                    );
+                    return new Constant(true, begin, end);
                 }
                 default: {
                     throw std::runtime_error("Invalid operation");
@@ -176,13 +262,11 @@ Expr * Scope::simplify(UnaryExpr * unary) {
             }
         }
         default: {
-            auto value = constant->value();
+            std::string value = *constant;
 
             switch (op) {
                 case opKind::lnot: {
-                    return new Constant(
-                        type::boolean, std::to_string(!value.empty()), begin, end
-                    );
+                    return new Constant(!value.empty(), begin, end);
                 }
                 default: {
                     throw std::runtime_error("Invalid operation");
@@ -198,6 +282,47 @@ Expr * Scope::simplify(BinaryExpr * binary) {
     auto op = binary->op();
     auto begin = binary->begin();
     auto end = binary->end();
+
+    if (left->kind() != Expr::Kind::constant || right->kind() != Expr::Kind::constant) {
+        return new BinaryExpr(
+            left,
+            right,
+            op,
+            begin,
+            end
+        );
+    }
+
+    using type = Constant::Type;
+
+    auto cl = (Constant *) left;
+    auto cr = (Constant *) right;
+
+    if (cl->type() == type::null || cr->type() == type::null) {
+        throw std::runtime_error("Invalid operation");
+    }
+
+    switch (cl->type()) {
+        case type::integer:
+            switch (cr->type()) {
+                case type::integer:
+                case type::boolean:
+                    return operate<int, int>(cl, op, cr);
+                default:
+                    return operate<std::string, std::string>(cl, op, cr);
+            }
+        case type::boolean:
+            switch (cr->type()) {
+                case type::integer:
+                case type::boolean:
+                    return operate<bool, bool>(cl, op, cr);
+                default:
+                    return operate<std::string, std::string>(cl, op, cr);
+            }
+        // type::string
+        default:
+            return operate<std::string, std::string>(cl, op, cr);
+    }
 
     return new BinaryExpr(left, right, op, begin, end);
 }

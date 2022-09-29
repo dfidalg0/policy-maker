@@ -15,3 +15,52 @@ std::string Constant::type_to_string(Type type) {
         default: return "unknown";
     }
 }
+
+Constant::operator int() {
+    if (_type == Type::boolean) {
+        return (int) (bool) *this;
+    }
+
+    if (_type == Type::null) {
+        return 0;
+    }
+
+    try {
+        return std::stoi(_value);
+    }
+    catch (std::invalid_argument) {
+        throw std::runtime_error("Cannot convert string to integer");
+    }
+}
+
+Constant::operator std::string() {
+    if (_type == Type::boolean) {
+        return ((bool) *this) ? "true" : "false";
+    }
+
+    if (_type == Type::integer) {
+        return std::to_string((int) *this);
+    }
+
+    if (_type == Type::null) {
+        return "null";
+    }
+
+    return _value;
+}
+
+Constant::operator bool() {
+    if (_type == Type::integer) {
+        return (bool) (int) *this;
+    }
+
+    if (_type == Type::string) {
+        return !this->value().empty();
+    }
+
+    if (_type == Type::null) {
+        return false;
+    }
+
+    return _value == "true" || _value == "1";
+}
