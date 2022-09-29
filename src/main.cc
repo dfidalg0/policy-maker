@@ -15,9 +15,33 @@ int main(int argc, char * argv[]) {
     try {
         auto program = parse(argv[1]);
 
-        program->print();
+        auto policies = compile(program);
 
-        compile(program);
+        for (auto & policy : *policies) {
+            cout << "Policy: " << policy.first << endl;
+
+            for (auto & syscall : *policy.second) {
+                cout << "  Syscall: " << syscall.first << endl;
+
+                for (auto & rule : *syscall.second) {
+                    cout
+                        << "    Action: "
+                        << Action::kind_to_string(rule.second->action_kind());
+
+                    if (rule.second->param() != -1) {
+                        cout << "(" << rule.second->param() << ")";
+                    }
+
+                    if (rule.first) {
+                        std::cout << " if\n";
+                        rule.first->print(6);
+                    }
+                    else {
+                        std::cout << endl;
+                    }
+                }
+            }
+        }
     }
     catch (FileNotFoundError e) {
         cerr << e.what() << endl;

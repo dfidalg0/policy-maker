@@ -18,6 +18,9 @@ public:
 
     void print(uint level = 0) override;
 
+    inline std::string name() const { return _name; }
+    inline Expr * condition() const { return _condition; }
+
 private:
     std::string _name;
     Expr * _condition;

@@ -132,6 +132,8 @@ Symbol* Scope::find(std::string name) {
 }
 
 Expr * Scope::evaluate(Expr * expr) {
+    if (!expr) return nullptr;
+
     switch (expr->kind()) {
         case Expr::Kind::function_call: {
             auto call = (FunctionCall*) expr;
@@ -277,13 +279,22 @@ Expr * Scope::simplify(UnaryExpr * unary) {
 }
 
 Expr * Scope::simplify(BinaryExpr * binary) {
+    using type = Constant::Type;
+    using kind = Expr::Kind;
+
     auto left = evaluate(binary->left());
     auto right = evaluate(binary->right());
     auto op = binary->op();
     auto begin = binary->begin();
     auto end = binary->end();
 
-    if (left->kind() != Expr::Kind::constant || right->kind() != Expr::Kind::constant) {
+    // TODO: implementar simplificação com base na associatividade dos
+    // operadores
+
+    if (
+        left->kind() != kind::constant ||
+        right->kind() != kind::constant
+    ) {
         return new BinaryExpr(
             left,
             right,
@@ -292,8 +303,6 @@ Expr * Scope::simplify(BinaryExpr * binary) {
             end
         );
     }
-
-    using type = Constant::Type;
 
     auto cl = (Constant *) left;
     auto cr = (Constant *) right;

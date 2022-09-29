@@ -2,7 +2,7 @@
 #include <syntax/nodes/function_decl.hh>
 #include <syntax/nodes/variable_decl.hh>
 
-void compile(Program * prog) {
+Policies * compile(Program * prog) {
     // Primeiro, definimos o escopo global
     auto scope = new Scope();
 
@@ -20,12 +20,60 @@ void compile(Program * prog) {
                 auto var_decl = (VariableDecl *) stmt;
 
                 auto name = var_decl->name();
-                auto value = var_decl->value();
+                auto value = scope->evaluate(var_decl->value());
 
-                auto var = new semantics::Variable(name, scope->evaluate(value));
+                if (value->kind() != kind::constant) {
+                    throw std::runtime_error("Global variables must be constant");
+                }
+
+                auto var = new semantics::Variable(name, value);
+
                 scope->add(var);
                 break;
             }
         }
     }
+
+    auto policies = new Policies();
+
+    for (auto stmt : prog->stmts()) {
+        switch (stmt->kind()) {
+            case kind::policy: {
+                auto policy = (Policy *) stmt;
+                auto name = policy->name();
+                auto rules = policy->rules();
+
+                auto policy_rules = new PolicyRules();
+                policies->insert({ name, policy_rules });
+
+                for (auto & rule: rules) {
+                    for (auto & syscall : rule->syscalls()) {
+                        auto name = syscall->name();
+                        auto condition = syscall->condition();
+
+                        SyscallRules * syscall_rules;
+
+                        auto it = policy_rules->find(name);
+
+                        if (it == policy_rules->end()) {
+                            syscall_rules = new SyscallRules();
+                            policy_rules->insert({ name, syscall_rules });
+                        }
+                        else {
+                            syscall_rules = it->second;
+                        }
+
+                        auto evaluated_condition = scope->evaluate(condition);
+
+                        syscall_rules->push_back({
+                            evaluated_condition,
+                            rule->action()
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return policies;
 }

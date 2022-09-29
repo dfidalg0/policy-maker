@@ -5,8 +5,13 @@ fn lte(x, y) -> x <= y;
 
 fn isBetween(x, a, b) -> and(gte(x,a), lte(x,b));
 
+STDIN = 0;
+STDOUT = 1;
+STDERR = 2;
+
 policy main {
     allow {
-        write if isBetween(:fd, 1, 2)
+        write if isBetween(:fd, STDOUT, STDERR),
+        read if :fd == STDIN,
     }
 }
