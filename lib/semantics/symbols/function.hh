@@ -14,6 +14,9 @@ namespace semantics {
         Function(FunctionDecl * decl, Scope * scope);
         Expr * call(std::vector<Expr*> args);
         virtual ~Function(){};
+
+        inline const std::vector<std::string> &args() const { return _args; }
+        inline Expr * body() const { return _body; }
     private:
         Expr * _body;
         Scope * _decl_scope;

@@ -15,6 +15,9 @@ public:
     Symbol* find(std::string name);
 
     Expr * evaluate(Expr * expr);
+    inline const std::unordered_map<std::string, Symbol *> &symbols() const {
+        return _symbols;
+    }
 private:
     Scope * _parent;
     std::unordered_map<std::string, Symbol*> _symbols;

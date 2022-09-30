@@ -6,26 +6,55 @@ using std::cout;
 using std::endl;
 using std::cerr;
 
-int main(int argc, char * argv[]) {
+int main(int argc, char const * argv[]) {
     if (argc != 2) {
         cout << "Usage: " << argv[0] << " <file>" << endl;
         return 1;
     }
 
     try {
-        auto program = parse(argv[1]);
+        // auto program = parse(argv[1]);
 
-        auto policies = compile(program);
+        // auto policies = analyze(program);
+
+        auto result = analyze(argv[1]);
+
+        auto policies = result->policies();
+        auto symbols = result->scope()->symbols();
+
+        cout << "Symbols:" << endl;
+
+        for (auto [name, symbol] : symbols) {
+            cout << "  - " << name;
+
+            if (symbol->kind() == Symbol::Kind::variable) {
+                auto var = (semantics::Variable *) symbol;
+                cout << ": Variable" << endl;
+                var->value()->print(4);
+            }
+            else {
+                auto fn = (semantics::Function *) symbol;
+                cout << ": Function" << endl;
+                cout << "    - Args: " << endl;
+                for (auto arg : fn->args()) {
+                    cout << "        - " << arg << endl;
+                }
+                cout << "    - Body:" << endl;
+                fn->body()->print(8);
+            }
+        }
+
+        cout << "Policies:" << endl;
 
         for (auto & policy : *policies) {
-            cout << "Policy: " << policy.first << endl;
+            cout << "  - Policy: " << policy.first << endl;
 
             for (auto & syscall : *policy.second) {
-                cout << "  Syscall: " << syscall.first << endl;
+                cout << "    Syscall: " << syscall.first << endl;
 
                 for (auto & rule : *syscall.second) {
                     cout
-                        << "    Action: "
+                        << "      Action: "
                         << Action::kind_to_string(rule.second->action_kind());
 
                     if (rule.second->param() != -1) {
@@ -34,7 +63,7 @@ int main(int argc, char * argv[]) {
 
                     if (rule.first) {
                         std::cout << " if\n";
-                        rule.first->print(6);
+                        rule.first->print(8);
                     }
                     else {
                         std::cout << endl;

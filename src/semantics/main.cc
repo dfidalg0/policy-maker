@@ -2,7 +2,12 @@
 #include <syntax/nodes/function_decl.hh>
 #include <syntax/nodes/variable_decl.hh>
 
-Policies * compile(Program * prog) {
+AnalysisResult * analyze(std::string filename) {
+    Program * prog = parse(filename.c_str());
+    return analyze(prog);
+}
+
+AnalysisResult * analyze(Program *prog) {
     // Primeiro, definimos o escopo global
     auto scope = new Scope();
 
@@ -12,7 +17,8 @@ Policies * compile(Program * prog) {
         // E o atualizamos com as declarações globais
         switch (stmt->kind()) {
             case kind::function_decl: {
-                auto func = new semantics::Function((FunctionDecl *) stmt, scope);
+                auto func_decl = (FunctionDecl *) stmt;
+                auto func = new semantics::Function(func_decl, scope);
                 scope->add(func);
                 break;
             }
@@ -37,43 +43,40 @@ Policies * compile(Program * prog) {
     auto policies = new Policies();
 
     for (auto stmt : prog->stmts()) {
-        switch (stmt->kind()) {
-            case kind::policy: {
-                auto policy = (Policy *) stmt;
-                auto name = policy->name();
-                auto rules = policy->rules();
+        if (stmt->kind() != kind::policy) continue;
 
-                auto policy_rules = new PolicyRules();
-                policies->insert({ name, policy_rules });
+        auto policy = (Policy *) stmt;
+        auto name = policy->name();
+        auto rules = policy->rules();
 
-                for (auto & rule: rules) {
-                    for (auto & syscall : rule->syscalls()) {
-                        auto name = syscall->name();
-                        auto condition = syscall->condition();
+        auto policy_rules = new PolicyRules();
+        policies->insert({name, policy_rules});
 
-                        SyscallRules * syscall_rules;
+        for (auto &rule : rules) {
+            for (auto &syscall : rule->syscalls()) {
+                auto name = syscall->name();
+                auto condition = syscall->condition();
 
-                        auto it = policy_rules->find(name);
+                SyscallRules *syscall_rules;
 
-                        if (it == policy_rules->end()) {
-                            syscall_rules = new SyscallRules();
-                            policy_rules->insert({ name, syscall_rules });
-                        }
-                        else {
-                            syscall_rules = it->second;
-                        }
+                auto it = policy_rules->find(name);
 
-                        auto evaluated_condition = scope->evaluate(condition);
-
-                        syscall_rules->push_back({
-                            evaluated_condition,
-                            rule->action()
-                        });
-                    }
+                if (it == policy_rules->end()) {
+                    syscall_rules = new SyscallRules();
+                    policy_rules->insert({ name, syscall_rules });
+                } else {
+                    syscall_rules = it->second;
                 }
+
+                auto evaluated_condition = scope->evaluate(condition);
+
+                syscall_rules->push_back({
+                    evaluated_condition,
+                    rule->action()
+                });
             }
         }
     }
 
-    return policies;
+    return new AnalysisResult(policies, scope);
 }
