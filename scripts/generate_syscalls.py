@@ -25,7 +25,7 @@ def main():
 #  include "syscalls/x86_64.hh"
 # endif
 
-SyscallEntry get_syscall_entry(const std::string &name) {
+gen::SyscallEntry get_syscall_entry(const std::string &name) {
     auto it = syscalls.find(name);
 
     if (it == syscalls.end()) {
@@ -63,16 +63,23 @@ def generate_arch_syscalls(arch: str):
 #include <string>
 #include <vector>
 
-typedef std::unordered_map<std::string, bool> SyscallParams;
+namespace gen {
+    struct SyscallParam {
+        std::string name;
+        bool pointer;
+    };
 
-typedef std::vector<SyscallParams> SyscallOverloads;
+    typedef std::vector<SyscallParam> SyscallParams;
 
-struct SyscallEntry {
-    int nr;
-    SyscallOverloads overloads;
-};
+    typedef std::vector<SyscallParams> SyscallOverloads;
 
-std::unordered_map<std::string, SyscallEntry> syscalls = {
+    struct SyscallEntry {
+        int nr;
+        SyscallOverloads overloads;
+    };
+}
+
+std::unordered_map<std::string, gen::SyscallEntry> syscalls = {
 ''' % { 'arch': arch.upper() })
 
         with SOURCE.open() as reader:
@@ -94,17 +101,17 @@ std::unordered_map<std::string, SyscallEntry> syscalls = {
                 overloads = future.result()
 
                 writer.write(
-                    '''    {"%s", SyscallEntry({
+                    '''    {"%s", gen::SyscallEntry({
         .nr = %d,
-        .overloads = SyscallOverloads({\n''' %
+        .overloads = gen::SyscallOverloads({\n''' %
                     ( name, nr )
                 )
 
                 if not overloads:
-                    writer.write('            SyscallParams(),\n')
+                    writer.write('            gen::SyscallParams(),\n')
 
                 for overload in overloads:
-                    ov_str = '            SyscallParams({'
+                    ov_str = '            gen::SyscallParams({'
 
                     ov_str += ', '.join(
                         '{"%s", %s}' % (
