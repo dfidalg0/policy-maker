@@ -63,7 +63,8 @@ static void validate_expr(Scope * scope, Expr * expr) {
         }
         case kind::syscall_param: {
             throw std::runtime_error(
-                "Syscall param not allowed inside function body");
+                "Syscall param not allowed inside function body"
+            );
         }
     }
 }

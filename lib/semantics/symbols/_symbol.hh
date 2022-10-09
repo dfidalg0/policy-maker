@@ -6,6 +6,7 @@ public:
     enum Kind {
         variable,
         function,
+        syscall_param,
     };
 
     Symbol(Kind kind, std::string name) : _kind(kind), _name(name){};

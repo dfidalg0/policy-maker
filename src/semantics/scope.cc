@@ -141,11 +141,11 @@ Expr * Scope::evaluate(Expr * expr) {
             auto symbol = find(name);
 
             if (symbol == nullptr) {
-                throw std::runtime_error("Function not defined");
+                throw std::runtime_error("Function not defined: " + name);
             }
 
             if (symbol->kind() != Symbol::Kind::function) {
-                throw std::runtime_error("Not a function");
+                throw std::runtime_error("Not a function: " + name);
             }
 
             auto function = (semantics::Function *) symbol;
@@ -170,15 +170,41 @@ Expr * Scope::evaluate(Expr * expr) {
             auto symbol = find(name);
 
             if (symbol == nullptr) {
-                throw std::runtime_error("Variable not defined");
+                throw std::runtime_error("Variable not defined: " + name);
             }
 
             if (symbol->kind() != Symbol::Kind::variable) {
-                throw std::runtime_error("Not a variable");
+                throw std::runtime_error("Not a variable: " + name);
             }
 
             auto var = (semantics::Variable *) symbol;
             return var->value();
+        }
+        case Expr::Kind::syscall_param: {
+            auto param = (::SyscallParam *) expr;
+
+            try {
+                std::stoi(param->name());
+                return param;
+            } catch (std::invalid_argument) {
+                auto name = param->name();
+
+                auto symbol = find(":" + name);
+
+                if (symbol == nullptr || symbol->kind() != Symbol::Kind::syscall_param) {
+                    throw std::runtime_error("Syscall parameter not defined: " + name);
+                }
+
+                auto sys_param = (semantics::SyscallParam *) symbol;
+
+                auto index = sys_param->index();
+
+                return new ::SyscallParam(
+                    std::to_string(index),
+                    param->begin(),
+                    param->end()
+                );
+            }
         }
         case Expr::Kind::unary_expr: {
             auto unary = (UnaryExpr*) expr;

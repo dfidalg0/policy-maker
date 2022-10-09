@@ -1,0 +1,5 @@
+policy main {
+    allow {
+        invalid,
+    }
+}
