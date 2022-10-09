@@ -26,7 +26,7 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
             names.insert(param.name);
 
             params.push_back({
-                .index = i + 1,
+                .index = i,
                 .param = param
             });
         }
