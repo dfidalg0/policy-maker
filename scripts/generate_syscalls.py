@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, check_output
 from typing import TypedDict
@@ -14,6 +15,8 @@ def main():
         writer.write('''#ifndef __SYSCALLS__
 #define __SYSCALLS__
 
+#include <stdexcept>
+
 # ifdef __i386__
 #  include "syscalls/x86_32.hh"
 # elif defined(__ILP32__)
@@ -22,10 +25,21 @@ def main():
 #  include "syscalls/x86_64.hh"
 # endif
 
+SyscallEntry get_syscall_entry(const std::string &name) {
+    auto it = syscalls.find(name);
+
+    if (it == syscalls.end()) {
+        throw std::runtime_error("Unknown syscall: " + name);
+    }
+
+    return it->second;
+}
 
 #endif // __SYSCALLS__''')
 
-    available_syscalls = set(['x86_32', 'x86_x32', 'x86_64'])
+    available_syscalls = set(
+        file[:-len('.csv')] for file in os.listdir(ROOT / 'scripts' / 'syscalls')
+    )
 
     if len(sys.argv) < 2 or sys.argv[1] not in available_syscalls:
         print('Usage: generate_syscalls.py <arch> [arch] ...')
@@ -49,16 +63,16 @@ def generate_arch_syscalls(arch: str):
 #include <string>
 #include <vector>
 
-typedef std::unordered_map<std::string, bool> syscall_params;
+typedef std::unordered_map<std::string, bool> SyscallParams;
 
-typedef std::vector<syscall_params> syscall_overloads;
+typedef std::vector<SyscallParams> SyscallOverloads;
 
-struct syscall_entry {
+struct SyscallEntry {
     int nr;
-    syscall_overloads overloads;
+    SyscallOverloads overloads;
 };
 
-std::unordered_map<std::string, syscall_entry> syscalls = {
+std::unordered_map<std::string, SyscallEntry> syscalls = {
 ''' % { 'arch': arch.upper() })
 
         with SOURCE.open() as reader:
@@ -80,17 +94,17 @@ std::unordered_map<std::string, syscall_entry> syscalls = {
                 overloads = future.result()
 
                 writer.write(
-                    '''    {"%s", syscall_entry({
+                    '''    {"%s", SyscallEntry({
         .nr = %d,
-        .overloads = syscall_overloads({\n''' %
+        .overloads = SyscallOverloads({\n''' %
                     ( name, nr )
                 )
 
                 if not overloads:
-                    writer.write('            syscall_params(),\n')
+                    writer.write('            SyscallParams(),\n')
 
                 for overload in overloads:
-                    ov_str = '            syscall_params({'
+                    ov_str = '            SyscallParams({'
 
                     ov_str += ', '.join(
                         '{"%s", %s}' % (
@@ -120,6 +134,9 @@ class Param(TypedDict):
 
 def handle_overload(overload: str) -> list[Param]:
     args = [arg.strip() for arg in overload.split(',')]
+
+    if args == ['void']:
+        return []
 
     for i, arg in enumerate(args):
         if arg.startswith('...'):
@@ -163,9 +180,6 @@ def find_syscall_args(name):
     synopsis = sections['SYNOPSIS']
 
     overloads = def_re.findall(synopsis)
-
-    if 'void' in overloads:
-        return [[]]
 
     return [handle_overload(ov) for ov in overloads]
 
