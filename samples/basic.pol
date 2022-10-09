@@ -12,8 +12,7 @@ policy main {
      * And this is a multiline comment
      */
     trap(10) {
-        brk,
-        allow
+        brk
     }
 }
 
