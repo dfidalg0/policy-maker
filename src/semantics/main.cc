@@ -78,12 +78,17 @@ AnalysisResult * analyze(Program *prog) {
     for (auto stmt : prog->stmts()) {
         if (stmt->kind() != kind::policy) continue;
 
-        auto policy = (Policy *) stmt;
-        auto name = policy->name();
-        auto rules = policy->rules();
+        auto policy_stmt = (Policy *) stmt;
+        auto name = policy_stmt->name();
+        auto rules = policy_stmt->rules();
 
         auto policy_rules = new PolicyRules();
-        policies->insert({name, policy_rules});
+
+        auto policy = new AnalysisResultPolicy(
+            policy_rules,
+            policy_stmt->default_action()
+        );
+        policies->insert({name, policy});
 
         for (auto &rule : rules) {
             for (auto &syscall : rule->syscalls()) {

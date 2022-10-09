@@ -16,7 +16,7 @@ policy main {
     }
 }
 
-policy other {
+policy other allow or {
     terminate {
         socket
     }

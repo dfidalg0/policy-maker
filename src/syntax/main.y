@@ -73,7 +73,7 @@
 
 %token <token>
     // Basics
-    YYEOF POLICY IDENTIFIER SYSCALL_PARAM
+    YYEOF POLICY IDENTIFIER SYSCALL_PARAM POLICY_DECL_OR
     // Delimiters
     LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK ARROW
     // Actions
@@ -203,13 +203,25 @@ args_list:
     }
 
 
-policy_decl: POLICY IDENTIFIER[name] LBRACE policy_body[body] RBRACE {
-    auto begin = $POLICY->begin();
-    auto end = $RBRACE->end();
-    auto name = $name->text();
-    auto body = $body;
-    $$ = new Policy(name, begin, end, body);
-}
+policy_decl:
+    POLICY IDENTIFIER[name] action POLICY_DECL_OR LBRACE policy_body[body] RBRACE {
+        auto begin = $POLICY->begin();
+        auto end = $RBRACE->end();
+        auto body = $body;
+        auto name = $name->text();
+        auto action = $action;
+        $$ = new Policy(name, body, action, begin, end);
+    }
+    | POLICY IDENTIFIER[name] LBRACE policy_body[body] RBRACE {
+        auto begin = $POLICY->begin();
+        auto end = $RBRACE->end();
+        auto name = $name->text();
+        auto body = $body;
+        auto action = new Action(
+            Action::Kind::error, begin, end, EPERM
+        );
+        $$ = new Policy(name, body, action, begin, end);
+    }
 
 policy_body:
     %empty {
@@ -466,7 +478,7 @@ function_call:
         );
     }
 
-token_keyword: IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG | TRUE | FALSE | NIL | FUNCTION
+token_keyword: IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG | TRUE | FALSE | NIL | FUNCTION | POLICY_DECL_OR
 
 soft_keyword: token_keyword {
     $$ = new Token(yytokentype::IDENTIFIER, $1->begin(), $1->end(), $1->text());

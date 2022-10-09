@@ -9,11 +9,12 @@
 class Action : public Node {
 public:
     enum class Kind {
+        error,
+        trap,
+        trace,
         allow,
         kill,
-        trap,
         notify,
-        trace,
         log,
         terminate,
     };

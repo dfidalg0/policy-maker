@@ -10,7 +10,21 @@
 
 typedef std::vector<std::pair<Expr *, Action *>> SyscallRules;
 typedef std::unordered_map<int, SyscallRules *> PolicyRules;
-typedef std::unordered_map<std::string, PolicyRules *> Policies;
+
+class AnalysisResultPolicy {
+public:
+    AnalysisResultPolicy(PolicyRules * rules, Action * default_action)
+        : _rules(rules), _default_action(default_action) {}
+
+    inline PolicyRules * rules() { return _rules; }
+
+    inline Action * default_action() { return _default_action; }
+private:
+    Action * _default_action;
+    PolicyRules * _rules;
+};
+
+typedef std::unordered_map<std::string, AnalysisResultPolicy *> Policies;
 
 class AnalysisResult {
 public:

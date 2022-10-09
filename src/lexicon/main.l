@@ -70,6 +70,7 @@ false       { MAKE_TOKEN(FALSE); }
 null        { MAKE_TOKEN(NIL); }
 
 if          { MAKE_TOKEN(IF); }
+or          { MAKE_TOKEN(POLICY_DECL_OR); }
 
 {sc_param}  { MAKE_TOKEN(SYSCALL_PARAM); }
 {id}        { MAKE_TOKEN(IDENTIFIER); }

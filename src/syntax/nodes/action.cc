@@ -11,6 +11,7 @@ Action::Kind Action::kind_from_token(Token * token) {
         case tt::TRACE: return Kind::trace;
         case tt::LOG: return Kind::log;
         case tt::TERMINATE: return Kind::terminate;
+        case tt::ERROR: return Kind::error;
         default: throw Action::Exception("Unexpected token type");
     }
 }
@@ -24,6 +25,7 @@ std::string Action::kind_to_string(Kind kind) {
         case Kind::trace: return "TRACE";
         case Kind::log: return "LOG";
         case Kind::terminate: return "TERMINATE";
+        case Kind::error: return "ERROR";
         default: throw Action::Exception("Unexpected action kind");
     }
 }
