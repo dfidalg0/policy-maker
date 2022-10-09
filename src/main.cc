@@ -1,6 +1,7 @@
 #include <iostream>
 #include <syntax/main.hh>
 #include <semantics/main.hh>
+#include <compile.hh>
 
 using std::cout;
 using std::endl;
@@ -49,7 +50,19 @@ int main(int argc, char const * argv[]) {
         for (auto & policy : *policies) {
             cout << "  - Policy: " << policy.first << endl;
 
-            for (auto & syscall : *policy.second) {
+            cout << "    Default action: ";
+
+            auto default_action = policy.second->default_action();
+
+            cout << Action::kind_to_string(default_action->action_kind());
+
+            if (default_action->param() != -1) {
+                cout << "(" << default_action->param() << ")";
+            }
+
+            cout << endl;
+
+            for (auto & syscall : *policy.second->rules()) {
                 cout << "    Syscall: " << syscall.first << endl;
 
                 for (auto & rule : *syscall.second) {
@@ -62,7 +75,7 @@ int main(int argc, char const * argv[]) {
                     }
 
                     if (rule.first) {
-                        std::cout << " if\n";
+                        cout << " if\n";
                         rule.first->print(8);
                     }
                     else {
@@ -70,6 +83,29 @@ int main(int argc, char const * argv[]) {
                     }
                 }
             }
+        }
+
+        sock_fprog prog = compile(result, "main");
+
+        cout << "Compiled:" << endl;
+        cout << "  - Len: " << prog.len << endl;
+        cout << "  - Filter: " << endl;
+
+        for (int i = 0; i < prog.len; i++) {
+            auto [code, jt, jf, k] = prog.filter[i];
+
+            cout << "    - code=0x" << std::hex << code;
+
+            if ((code & 0x08) == BPF_K) {
+                cout << "; k=0x" << std::hex << k;
+            }
+
+            if ((code & 0x07) == BPF_JMP && (code & 0x18) != BPF_JA) {
+                cout << "; jt=" << (unsigned) jt;
+                cout << "; jf=" << (unsigned) jf;
+            }
+
+            cout << endl;
         }
     }
     catch (FileNotFoundError e) {
