@@ -1,6 +1,8 @@
 INPUTS := $(shell find src -name '*.cc')
 HEADERS := $(shell find lib -name '*.hh')
 
+ARCH ?= x86_64
+
 all: compiler
 
 compiler: bin/compiler
@@ -12,6 +14,9 @@ lexer: target/lexer.yy.cc
 
 parser: target/parser.yy.cc target/parser.yy.hh
 
+syscalls: | target
+	python3 scripts/generate_syscalls.py $(ARCH)
+
 target/lexer.yy.cc: src/lexicon/main.l | target
 	flex -o target/lexer.yy.cc src/lexicon/main.l
 
@@ -21,7 +26,7 @@ target/parser.yy.cc target/parser.yy.hh: src/syntax/main.y | target
 bin:
 	mkdir bin
 
-bin/compiler: lexer parser $(INPUTS) $(HEADERS) | bin
+bin/compiler: lexer parser syscalls $(INPUTS) $(HEADERS) | bin
 	g++ -lfl -I lib -I target $(INPUTS) target/*.cc -o bin/compiler
 
 clean:
