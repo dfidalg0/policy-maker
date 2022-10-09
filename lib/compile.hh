@@ -7,22 +7,19 @@
 
 #include <semantics/main.hh>
 #include <string>
+#include <vector>
 
 class CompileResult {
 public:
-    CompileResult(AnalysisResult * ar, std::string target)
-        : _ar(ar), _target(target) {}
-    CompileResult(Program * program, std::string target)
-        : CompileResult(analyze(program), target) {}
-    CompileResult(std::string filename, std::string target)
-        : CompileResult(analyze(filename), target) {}
+    CompileResult(AnalysisResult * ar, std::string target);
+    CompileResult(Program * program, std::string target);
+    CompileResult(std::string filename, std::string target);
 
     operator std::string();
 
     operator sock_fprog();
 private:
-    std::string _target;
-    AnalysisResult * _ar;
+    std::vector<sock_filter> * _filter;
 };
 
 CompileResult compile(AnalysisResult * ar, std::string target);

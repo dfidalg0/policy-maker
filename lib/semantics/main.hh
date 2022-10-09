@@ -7,9 +7,10 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <map>
 
 typedef std::vector<std::pair<Expr *, Action *>> SyscallRules;
-typedef std::unordered_map<int, SyscallRules *> PolicyRules;
+typedef std::map<int, SyscallRules *> PolicyRules;
 
 class AnalysisResultPolicy {
 public:

@@ -14,10 +14,6 @@ int main(int argc, char const * argv[]) {
     }
 
     try {
-        // auto program = parse(argv[1]);
-
-        // auto policies = analyze(program);
-
         auto result = analyze(argv[1]);
 
         auto policies = result->policies();
