@@ -150,13 +150,13 @@ def handle_overload(overload: str) -> list[Param]:
             type = 'void *'
             pointer = True
         else:
-            match = re.search(r'[a-zA-Z_]\w*(\[\d*\])?$', arg)
+            match = re.search(r'([a-zA-Z_]\w*)(\[\d*\])?$', arg)
 
             if not match:
                 raise ValueError(f'Could not parse argument {arg}')
 
-            name = match.group(0)
-            array = match.group(1)
+            name = match.group(1)
+            array = match.group(2)
 
             type = arg[:arg.rfind(name)].strip()
 
