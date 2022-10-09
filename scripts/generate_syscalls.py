@@ -125,12 +125,11 @@ std::unordered_map<std::string, gen::SyscallEntry> syscalls = {
 
                     writer.write(ov_str)
 
-                writer.write('''        })
-    }) },\n''')
+                writer.write('        })\n    }) },\n')
 
-        writer.write('''};
-
-#endif // __SYSCALLS_%(arch)s__''' % { 'arch': arch.upper() })
+        writer.write(
+            '};\n\n#endif // __SYSCALLS_%(arch)s__' % { 'arch': arch.upper() }
+        )
 
 
 class Param(TypedDict):
@@ -184,9 +183,23 @@ def find_syscall_args(name):
     headers = [h.strip() for h in section_re.findall(out)]
     sections = dict(zip(headers, section_re.split(out)[1:]))
 
-    synopsis = sections['SYNOPSIS']
+    synopsis: str = sections['SYNOPSIS']
 
-    overloads = def_re.findall(synopsis)
+    if '#if' in synopsis:
+        preprocessed = synopsis.replace('#include', '')
+
+        preprocessed = check_output(
+            args=['gcc', '-E', '-P', '-'],
+            input=preprocessed.encode('utf-8'),
+            stderr=sys.stderr
+        ).decode('utf-8')
+    else:
+        preprocessed = synopsis
+
+    overloads: list[str] = def_re.findall(preprocessed)
+
+    if name == 'reboot':
+        overloads = [overloads[0]]
 
     return [handle_overload(ov) for ov in overloads]
 
