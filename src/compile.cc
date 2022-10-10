@@ -388,16 +388,19 @@ CompileResult::operator std::string() {
                     ss << "SECCOMP_RET_KILL";
                     break;
                 case SECCOMP_RET_ERRNO:
-                    ss << "SECCOMP_RET_ERRNO(" << (k & 0x0000ffff) << ")";
+                    ss << "SECCOMP_RET_ERRNO | ("
+                        << (k & 0x0000ffff) << " & SECCOMP_RET_DATA)";
                     break;
                 case SECCOMP_RET_TRACE:
-                    ss << "SECCOMP_RET_TRACE(" << (k & 0x0000ffff) << ")";
+                    ss << "SECCOMP_RET_TRACE | ("
+                        << (k & 0x0000ffff) << " & SECCOMP_RET_DATA)";
                     break;
                 case SECCOMP_RET_LOG:
                     ss << "SECCOMP_RET_LOG";
                     break;
                 case SECCOMP_RET_TRAP:
-                    ss << "SECCOMP_RET_TRAP(" << (k & 0x0000ffff) << ")";
+                    ss << "SECCOMP_RET_TRAP | ("
+                        << (k & 0x0000ffff) << " & SECCOMP_RET_DATA)";
                     break;
                 case SECCOMP_RET_USER_NOTIF:
                     ss << "SECCOMP_RET_USER_NOTIF";
