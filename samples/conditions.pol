@@ -1,6 +1,7 @@
-policy main {
+policy main allow or {
     allow {
-        write if :fd == 1 - 1,
-        read if :fd >= 1 && :fd <= 2,
+        write if :fd == 1,
+        read if :fd == 0,
+        exit
     }
 }

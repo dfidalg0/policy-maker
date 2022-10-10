@@ -16,6 +16,8 @@ public:
     inline std::string name() const { return _name; }
 
     void print(uint level = 0) override;
+
+    uint index();
 };
 
 #endif // __SYSCALL_PARAM_HH__
