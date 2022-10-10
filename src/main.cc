@@ -3,6 +3,10 @@
 #include <semantics/main.hh>
 #include <compile.hh>
 
+#include <linux/filter.h>
+#include <linux/seccomp.h>
+#include <sys/prctl.h>
+
 using std::cout;
 using std::endl;
 using std::cerr;
@@ -81,28 +85,26 @@ int main(int argc, char const * argv[]) {
             }
         }
 
-        sock_fprog prog = compile(result, "main");
+        auto compile_result = compile(result, "main");
 
-        cout << "Compiled:" << endl;
-        cout << "  - Len: " << prog.len << endl;
-        cout << "  - Filter: " << endl;
+        sock_fprog prog = compile_result;
+        std::string prog_str = compile_result;
 
-        for (int i = 0; i < prog.len; i++) {
-            auto [code, jt, jf, k] = prog.filter[i];
+        cout << "Compiled program:\n" << endl;
 
-            cout << "    - code=0x" << std::hex << code << std::dec;
+        cout << prog_str << endl;
 
-            if ((code & 0x08) == BPF_K) {
-                cout << "; k=" << k;
-            }
-
-            if ((code & 0x07) == BPF_JMP && (code & 0x30) != BPF_JA) {
-                cout << "; jt=" << (unsigned) jt;
-                cout << "; jf=" << (unsigned) jf;
-            }
-
-            cout << endl;
+        if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
+            perror("prctl");
+            return 1;
         }
+
+        if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog)) {
+            perror("seccomp");
+            return 1;
+        }
+
+        cout << "Printed successfully" << endl;
     }
     catch (FileNotFoundError e) {
         cerr << e.what() << endl;

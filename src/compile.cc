@@ -5,7 +5,7 @@
 #include <utility>
 #include <stddef.h>
 
-#define SECCOMP_DATA(name) offsetof(struct seccomp_data, name)
+#include <compile_expr.hh>
 
 // Tipos auxiliares
 struct SyscallRulesWithNumber {
@@ -112,13 +112,16 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
             _filter->push_back(
                 // Se o acumulador for 0, pula para a próxima regra. Caso
                 // contrário, pula para o destino da regra
-                BPF_JUMP(BPF_JMP | BPF_JGE | BPF_K, 0, 0, 1)
+                BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, 0, 0, 1)
             );
 
-            // TODO: Compilar a expressão para o filtro.
-            // Por ora, vamos apenas carregar 1 no acumulador, assumindo que
-            // a expressão é sempre verdadeira
-            _filter->push_back(BPF_STMT(BPF_LD | BPF_IMM, 1));
+            auto compiled_expr = compile_expr(expr);
+
+            for (auto it = compiled_expr->rbegin(); it != compiled_expr->rend(); it++) {
+                _filter->push_back(*it);
+            }
+
+            delete compiled_expr;
         }
 
         auto left_son = 2 * i + 1;
@@ -192,7 +195,220 @@ CompileResult::CompileResult(std::string filename, std::string target)
 
 // Conversão do filtro para código em C
 CompileResult::operator std::string() {
-    throw std::runtime_error("Not implemented");
+    std::stringstream ss;
+
+    for (auto &[code, jt, jf, k]: *_filter) {
+        auto op_class = code & 0x07;
+
+        switch (op_class) {
+            case BPF_JMP: {
+                ss << "BPF_JUMP(BPF_JMP | ";
+
+                switch (code & 0xf0) {
+                    case BPF_JA:
+                        ss << "BPF_JA  | ";
+                        break;
+                    case BPF_JEQ:
+                        ss << "BPF_JEQ | ";
+                        break;
+                    case BPF_JGT:
+                        ss << "BPF_JGT | ";
+                        break;
+                    case BPF_JGE:
+                        ss << "BPF_JGE | ";
+                        break;
+                    case BPF_JSET:
+                        ss << "BPF_JSET | ";
+                        break;
+                }
+
+                break;
+            }
+            case BPF_LD: {
+                ss << "BPF_STMT(BPF_LD  | ";
+
+                switch(code & 0x18) {
+                    case BPF_W:
+                        ss << "BPF_W   | ";
+                        break;
+                    case BPF_H:
+                        ss << "BPF_H   | ";
+                        break;
+                    case BPF_B:
+                        ss << "BPF_B   | ";
+                        break;
+                }
+
+                switch (code & 0xe0) {
+                    case BPF_ABS:
+                        ss << "BPF_ABS, ";
+                        break;
+                    case BPF_IND:
+                        ss << "BPF_IND, ";
+                        break;
+                    case BPF_MEM:
+                        ss << "BPF_MEM, ";
+                        break;
+                    case BPF_LEN:
+                        ss << "BPF_LEN, ";
+                        break;
+                    case BPF_IMM:
+                        ss << "BPF_IMM, ";
+                        break;
+                }
+
+                break;
+            }
+            case BPF_LDX: {
+                ss << "BPF_STMT(BPF_LDX | ";
+
+                switch(code & 0x18) {
+                    case BPF_W:
+                        ss << "BPF_W   | ";
+                        break;
+                    case BPF_H:
+                        ss << "BPF_H   | ";
+                        break;
+                    case BPF_B:
+                        ss << "BPF_B   | ";
+                        break;
+                }
+
+                switch (code & 0xe0) {
+                    case BPF_IMM:
+                        ss << "BPF_IMM, ";
+                        break;
+                    case BPF_MEM:
+                        ss << "BPF_MEM, ";
+                        break;
+                    case BPF_LEN:
+                        ss << "BPF_LEN, ";
+                        break;
+                    case BPF_MSH:
+                        ss << "BPF_MSH, ";
+                        break;
+                }
+
+                break;
+            }
+            case BPF_RET: {
+                ss << "BPF_STMT(BPF_RET | ";
+                break;
+            }
+            case BPF_ALU: {
+                ss << "BPF_STMT(BPF_ALU | ";
+
+                switch(code & 0xf0) {
+                    case BPF_ADD:
+                        ss << "BPF_ADD | ";
+                        break;
+                    case BPF_SUB:
+                        ss << "BPF_SUB | ";
+                        break;
+                    case BPF_MUL:
+                        ss << "BPF_MUL | ";
+                        break;
+                    case BPF_DIV:
+                        ss << "BPF_DIV | ";
+                        break;
+                    case BPF_OR:
+                        ss << "BPF_OR  | ";
+                        break;
+                    case BPF_AND:
+                        ss << "BPF_AND | ";
+                        break;
+                    case BPF_LSH:
+                        ss << "BPF_LSH | ";
+                        break;
+                    case BPF_RSH:
+                        ss << "BPF_RSH | ";
+                        break;
+                    case BPF_NEG:
+                        ss << "BPF_NEG | ";
+                        break;
+                    case BPF_MOD:
+                        ss << "BPF_MOD | ";
+                        break;
+                    case BPF_XOR:
+                        ss << "BPF_XOR | ";
+                        break;
+                }
+
+                break;
+            }
+            case BPF_ST: {
+                ss << "BPF_STMT(BPF_ST  | ";
+
+                break;
+            }
+            case BPF_MISC: {
+                ss << "BPF_STMT(BPF_MISC| ";
+
+                switch(code & 0xf0) {
+                    case BPF_TAX:
+                        ss << "BPF_TAX | ";
+                        break;
+                    case BPF_TXA:
+                        ss << "BPF_TXA | ";
+                        break;
+                }
+
+                break;
+            }
+            case BPF_STX: {
+                ss << "BPF_STMT(BPF_STX | ";
+                break;
+            }
+        }
+
+        if (op_class != BPF_LD && op_class != BPF_LDX) {
+            switch (code & 0x08) {
+                case BPF_K:
+                    ss << "BPF_K, ";
+                    break;
+                case BPF_X:
+                    ss << "BPF_X, ";
+                    break;
+            }
+        }
+
+        if ((code & 0x07) == BPF_RET) {
+            switch (k & 0xffff0000) {
+                case SECCOMP_RET_ALLOW:
+                    ss << "SECCOMP_RET_ALLOW";
+                    break;
+                case SECCOMP_RET_KILL_THREAD:
+                    ss << "SECCOMP_RET_KILL";
+                    break;
+                case SECCOMP_RET_ERRNO:
+                    ss << "SECCOMP_RET_ERRNO(" << (k & 0x0000ffff) << ")";
+                    break;
+                case SECCOMP_RET_TRACE:
+                    ss << "SECCOMP_RET_TRACE(" << (k & 0x0000ffff) << ")";
+                    break;
+                case SECCOMP_RET_LOG:
+                    ss << "SECCOMP_RET_LOG";
+                    break;
+                case SECCOMP_RET_TRAP:
+                    ss << "SECCOMP_RET_TRAP(" << (k & 0x0000ffff) << ")";
+                    break;
+                case SECCOMP_RET_USER_NOTIF:
+                    ss << "SECCOMP_RET_USER_NOTIF";
+                    break;
+            }
+        }
+        else {
+            ss << k;
+        }
+
+        if ((code & 0x07) == BPF_JMP && (code & 0xf0) != BPF_JA) {
+            ss << ", " << (uint) jt << ", " << (uint) jf;
+        }
+
+        ss << "),\n";
+    }
+
+    return ss.str();
 }
 
 // Conversão do filtro para estrutura sock_fprog
@@ -207,7 +423,7 @@ AnalysisResultPolicy *get_policy(AnalysisResult *ar, std::string &target) {
     auto it = ar->policies()->find(target);
 
     if (it == ar->policies()->end()) {
-        throw std::runtime_error("Policy not found");
+        throw std::runtime_error("Policy not found: " + target);
     }
 
     return it->second;
