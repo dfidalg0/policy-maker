@@ -202,7 +202,14 @@ CompileResult::operator std::string() {
 
         switch (op_class) {
             case BPF_JMP: {
-                ss << "BPF_JUMP(BPF_JMP | ";
+                if ((code & 0xf0) == BPF_JA) {
+                    ss << "BPF_STMT(";
+                }
+                else {
+                    ss << "BPF_JUMP(";
+                }
+
+                ss << "BPF_JMP | ";
 
                 switch (code & 0xf0) {
                     case BPF_JA:
