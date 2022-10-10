@@ -1,4 +1,4 @@
-policy main allow or {
+policy main {
     allow {
         write if :fd == 1,
         read if :fd == 0,
