@@ -75,7 +75,7 @@ int main(int argc, char const * argv[]) {
                     }
 
                     if (rule.first) {
-                        cout << " if\n";
+                        cout << " IF\n";
                         rule.first->print(8);
                     }
                     else {

@@ -8,6 +8,50 @@
 
 #define SECCOMP_DATA(name) offsetof(seccomp_data, name)
 
-std::vector<sock_filter> * compile_expr(Expr * expr);
+typedef std::vector<sock_filter> FilterVector;
+
+FilterVector * compile_expr(Expr * expr);
+
+class RegisterPool {
+public:
+    class Register {
+       private:
+        Register(uint reg) : _nr(reg), _is_used(false) {}
+
+        bool _is_used;
+        uint _nr;
+
+        friend class RegisterPool;
+
+       public:
+        void release() {
+            _is_used = false;
+        }
+
+        inline uint nr() {
+            return _nr;
+        }
+    };
+
+    RegisterPool() {
+        for (uint i = 0; i < BPF_MEMWORDS; ++i) {
+            _registers.push_back(Register(i));
+        }
+    }
+
+    Register& get() {
+        for (auto& reg : _registers) {
+            if (!reg._is_used) {
+                reg._is_used = true;
+                return reg;
+            }
+        }
+
+        throw std::runtime_error("Expression too complex");
+    }
+
+private:
+    std::vector<Register> _registers;
+};
 
 #endif // __COMPILE_EXPR_HH__

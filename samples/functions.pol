@@ -13,5 +13,6 @@ policy main {
     allow {
         write if isBetween(:fd, STDOUT, STDERR),
         read if :fd == STDIN,
+        exit_group
     }
 }

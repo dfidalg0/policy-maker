@@ -1,7 +1,6 @@
 policy main {
     allow {
-        write if :fd == 1,
-        read if :fd == 0,
-        exit
+        write if :fd == 1 && :count < 22,
+        exit_group
     }
 }
