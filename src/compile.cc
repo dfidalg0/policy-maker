@@ -395,6 +395,9 @@ CompileResult::operator std::string() {
                 case SECCOMP_RET_USER_NOTIF:
                     ss << "SECCOMP_RET_USER_NOTIF";
                     break;
+                case SECCOMP_RET_KILL_PROCESS:
+                    ss << "SECCOMP_RET_KILL_PROCESS";
+                    break;
             }
         }
         else {
