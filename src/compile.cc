@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <queue>
 #include <utility>
+#include <stddef.h>
+
+#define SECCOMP_DATA(name) offsetof(struct seccomp_data, name)
 
 // Tipos auxiliares
 struct SyscallRulesWithNumber {
-    int nr;
+    uint nr;
     SyscallRules *rules;
 };
 
@@ -41,11 +44,142 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
     auto default_action = get_seccomp_ret(policy->default_action());
 
     // Vamos construir o filtro de trás pra frente para depois revertê-lo
-    _filter->push_back(default_action);
+
+    // Para isso, vamos precisar de um mapa de posições, de forma que seremos
+    // capazes de encontrar a posição do início da validação de uma syscall
+    // e poder fazer os jumps de forma adequada.
+    std::unordered_map<uint, uint> position_map;
+
+    auto get_position = [&position_map](uint nr) {
+        auto it = position_map.find(nr);
+
+        if (it == position_map.end()) {
+            return 0u;
+        }
+
+        return it->second;
+    };
 
     for (int i = order.size() - 1; i >= 0; i--) {
         auto [nr, rules] = order[i];
+
+        auto current_length = _filter->size();
+
+        // Match. No caso curr_nr == nr[i]
+        // Caso nenhuma regra passe, o filtro vai para o default_action
+        _filter->push_back(default_action);
+
+        // Como estamos construindo o filtro de trás pra frente, precisamos
+        // iterar sobre as regras na ordem inversa.
+        for (auto it = rules->rbegin(); it != rules->rend(); it++) {
+            auto [expr, action] = *it;
+
+            // Se não foi especificada uma condição, é porque esta será tratada
+            // como sempre verdadeira.
+            if (expr == nullptr) {
+                expr = new Constant(true, { 0, 0 }, { 0, 0 });
+            }
+
+            auto constant = expr->kind() == kind::constant
+                ? (Constant *) expr
+                : nullptr;
+
+            // Se a condição for uma constante verdadeira, podemos ignorar
+            // todo o código das condições definidas anteriormente, uma vez que
+            // elas nunca serão executadas.
+            if (constant && constant->is_truthy()) {
+                // Podemos ainda otimizar o filtro, já que sabemos que todas as
+                // condições inseridas acima nunca serão executadas.
+                while (_filter->size() > current_length) {
+                    _filter->pop_back();
+                }
+
+                _filter->push_back(get_seccomp_ret(action));
+
+                continue;
+            }
+
+            // Se for uma constante falsa, podemos ignorar esta condição, pois
+            // sua ação nunca será executada.
+            if (constant && !constant->is_truthy()) {
+                continue;
+            }
+
+            // Destino da expressão verdadeira
+            _filter->push_back(get_seccomp_ret(action));
+
+            // Jump para a finalização ou para a próxima expressão
+            _filter->push_back(
+                // Se o acumulador for 0, pula para a próxima regra. Caso
+                // contrário, pula para o destino da regra
+                BPF_JUMP(BPF_JMP | BPF_JGE | BPF_K, 0, 0, 1)
+            );
+
+            // TODO: Compilar a expressão para o filtro.
+            // Por ora, vamos apenas carregar 1 no acumulador, assumindo que
+            // a expressão é sempre verdadeira
+            _filter->push_back(BPF_STMT(BPF_LD | BPF_IMM, 1));
+        }
+
+        auto left_son = 2 * i + 1;
+        auto right_son = 2 * i + 2;
+
+        auto left_son_pos = get_position(left_son);
+        auto right_son_pos = get_position(right_son);
+
+        // Último JUMP. No caso curr_nr < nr[i]. Saltamos em direção ao filho
+        // esquerdo
+        if (left_son_pos == 0) {
+            _filter->push_back(default_action);
+        }
+        else {
+            _filter->push_back(
+                BPF_STMT(
+                    BPF_JMP | BPF_JA | BPF_K,
+                    (uint) _filter->size() - left_son_pos - 1
+                )
+            );
+        }
+
+
+        // Jump condicional. Aqui, já sabemos que curr_nr <= nr[i]. Se
+        // curr_nr == nr[i], saltamos para a validação das regras. Caso
+        // contrário, saltamos para a instrução de JUMP definida acima
+        _filter->push_back(
+            BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, nr, 1, 0)
+        );
+
+        // No caso curr_nr > nr[i]. Saltamos em direção ao filho direito
+        if (right_son_pos == 0) {
+            _filter->push_back(default_action);
+        }
+        else {
+            _filter->push_back(
+                BPF_STMT(
+                    BPF_JMP | BPF_JA | BPF_K,
+                    (uint) _filter->size() - right_son_pos - 1
+                )
+            );
+        }
+
+        // Jump condicional. Aqui, vamos verificar se curr_nr > nr[i]. Se
+        // for, saltamos para a instrução de JUMP definida acima. Caso
+        // contrário, saltamos para a instrução de JUMP condicional acima, que
+        // checará se curr_nr == nr[i]
+        _filter->push_back(
+            BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, nr, 0, 1)
+        );
+
+        auto pos = _filter->size() - 1;
+
+        position_map[i] = pos;
     }
+
+    // Por fim (ou início), vamos fazer o carregamento do número da syscall
+    // no acumulador
+    _filter->push_back(
+        BPF_STMT(BPF_LD | BPF_W | BPF_ABS, SECCOMP_DATA(nr))
+    );
 
     std::reverse(_filter->begin(), _filter->end());
 }

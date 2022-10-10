@@ -64,3 +64,7 @@ Constant::operator bool() {
 
     return _value == "true" || _value == "1";
 }
+
+bool Constant::is_truthy() {
+    return (bool) *this;
+}

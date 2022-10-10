@@ -14,6 +14,8 @@ public:
 
     static std::string type_to_string(Type type);
 
+    bool is_truthy();
+
 private:
     std::string _value;
     Type _type;

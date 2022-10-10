@@ -90,13 +90,13 @@ int main(int argc, char const * argv[]) {
         for (int i = 0; i < prog.len; i++) {
             auto [code, jt, jf, k] = prog.filter[i];
 
-            cout << "    - code=0x" << std::hex << code;
+            cout << "    - code=0x" << std::hex << code << std::dec;
 
             if ((code & 0x08) == BPF_K) {
-                cout << "; k=0x" << std::hex << k;
+                cout << "; k=" << k;
             }
 
-            if ((code & 0x07) == BPF_JMP && (code & 0x18) != BPF_JA) {
+            if ((code & 0x07) == BPF_JMP && (code & 0x30) != BPF_JA) {
                 cout << "; jt=" << (unsigned) jt;
                 cout << "; jf=" << (unsigned) jf;
             }
