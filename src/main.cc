@@ -155,6 +155,11 @@ int main(int argc, char const * argv[]) {
 
         auto size = _rest.size();
 
+        if (!size) {
+            cout << "Code compiled successfully" << endl;
+            return 0;
+        }
+
         char ** _argv = new char*[size + 1];
 
         for (uint i = 0; i < size; ++i) {

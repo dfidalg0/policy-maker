@@ -4,7 +4,7 @@ policy main {
         brk,
         arch_prctl,
         mmap,
-        write,
+        write if :fd == 1,
         exit_group,
         newfstatat,
         openat,

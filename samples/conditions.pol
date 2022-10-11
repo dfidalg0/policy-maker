@@ -1,6 +1,6 @@
 policy main {
     allow {
-        write if :fd == 1 && :count < 22,
+        write if :fd == 1 && :count < 28,
         exit_group
     }
 }
