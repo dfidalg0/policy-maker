@@ -4,7 +4,8 @@ void SyscallParam::print(uint level) {
     std::cout << indent(level) << "> SyscallParam: \n";
 
     try {
-        std::cout << indent(level + 2) << "- Index: " << std::stoi(_name) << "\n";
+        auto idx = std::stoi(_name);
+        std::cout << indent(level + 2) << "- Index: " << idx << "\n";
     }
     catch (std::invalid_argument) {
         std::cout << indent(level + 2) << "- Name: " << _name << std::endl;
