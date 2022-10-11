@@ -36,7 +36,7 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
 }
 
 AnalysisResult * analyze(std::string filename) {
-    Program * prog = parse(filename.c_str());
+    Program * prog = parse(filename);
     return analyze(prog);
 }
 

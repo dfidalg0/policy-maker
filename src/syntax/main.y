@@ -33,7 +33,7 @@
 
     static Program * program;
 
-    Program * parse(const char * filename);
+    Program * parse(std::string filename);
 
     inline BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
 
@@ -491,8 +491,8 @@ void yyerror(ReturnValue * ret, char const * err) {
     std::cerr << err << std::endl;
 }
 
-Program * parse(const char * filename) {
-    auto file = fopen(filename, "r");
+Program * parse(std::string filename) {
+    auto file = fopen(filename.c_str(), "r");
 
     if (!file) {
         throw FileNotFoundError(filename);

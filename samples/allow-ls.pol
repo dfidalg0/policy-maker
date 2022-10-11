@@ -1,0 +1,27 @@
+policy main {
+    allow {
+        execve,
+        brk,
+        arch_prctl,
+        mmap,
+        write,
+        exit_group,
+        newfstatat,
+        openat,
+        close,
+        writev,
+        read,
+        access,
+        pread64,
+        set_tid_address,
+        set_robust_list,
+        mprotect,
+        prlimit64,
+        munmap,
+        getrandom,
+        futex,
+        getdents64,
+        ioctl,
+        statfs,
+    }
+}

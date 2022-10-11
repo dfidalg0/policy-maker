@@ -2,6 +2,9 @@
 #include <syntax/main.hh>
 #include <semantics/main.hh>
 #include <compile.hh>
+#include <utils/cmd_parse.hh>
+#include <unistd.h>
+#include <cstring>
 
 #include <linux/filter.h>
 #include <linux/seccomp.h>
@@ -12,87 +15,131 @@ using std::endl;
 using std::cerr;
 
 int main(int argc, char const * argv[]) {
-    if (argc != 2) {
-        cout << "Usage: " << argv[0] << " <file>" << endl;
-        return 1;
-    }
+    auto cmd_parser = utils::CmdParser()
+        .add_help_arg()
+        .add_arg({
+            .name = "input",
+            .type = utils::ArgType::STRING,
+            .required = true,
+            .positional = true,
+            .description = "The input file to compile",
+            .shorthand = "i",
+        })
+        .add_arg({
+            .name = "print-ast",
+            .type = utils::ArgType::NONE,
+            .required = false,
+            .positional = false,
+            .description = "Print the AST to stdout",
+        })
+        .add_arg({
+            .name = "print-analyzed-ast",
+            .type = utils::ArgType::NONE,
+            .required = false,
+            .positional = false,
+            .description = "Print the analyzed AST to stdout",
+        })
+        .add_arg({
+            .name = "print-bpf",
+            .type = utils::ArgType::NONE,
+            .required = false,
+            .positional = false,
+            .description = "Print the final BPF code to stdout",
+        });
 
     try {
-        auto result = analyze(argv[1]);
+        auto options = cmd_parser.parse(argc, argv);
 
-        auto policies = result->policies();
-        auto symbols = result->scope()->symbols();
+        auto ast = parse(options.get("input"));
 
-        cout << "Symbols:" << endl;
+        if (options.has("print-ast")) {
+            cout << "AST:" << endl;
+            ast->print();
+        }
 
-        for (auto [name, symbol] : symbols) {
-            cout << "  - " << name;
+        auto result = analyze(ast);
 
-            if (symbol->kind() == Symbol::Kind::variable) {
-                auto var = (semantics::Variable *) symbol;
-                cout << ": Variable" << endl;
-                var->value()->print(4);
-            }
-            else {
-                auto fn = (semantics::Function *) symbol;
-                cout << ": Function" << endl;
-                cout << "    - Args: " << endl;
-                for (auto arg : fn->args()) {
-                    cout << "        - " << arg << endl;
+        if (options.has("print-analyzed-ast")) {
+            cout << "Analyzed AST:" << endl;
+
+            auto policies = result->policies();
+            auto symbols = result->scope()->symbols();
+
+            cout << "Symbols:" << endl;
+
+            for (auto [name, symbol] : symbols) {
+                cout << "  - " << name;
+
+                if (symbol->kind() == Symbol::Kind::variable) {
+                    auto var = (semantics::Variable *) symbol;
+                    cout << ": Variable" << endl;
+                    var->value()->print(4);
                 }
-                cout << "    - Body:" << endl;
-                fn->body()->print(8);
+                else {
+                    auto fn = (semantics::Function *) symbol;
+                    cout << ": Function" << endl;
+                    cout << "    - Args: " << endl;
+                    for (auto arg : fn->args()) {
+                        cout << "        - " << arg << endl;
+                    }
+                    cout << "    - Body:" << endl;
+                    fn->body()->print(8);
+                }
+            }
+
+            cout << "Policies:" << endl;
+
+            for (auto & policy : *policies) {
+                cout << "  - Policy: " << policy.first << endl;
+
+                cout << "    Default action: ";
+
+                auto default_action = policy.second->default_action();
+
+                cout << Action::kind_to_string(default_action->action_kind());
+
+                if (default_action->param() != -1) {
+                    cout << "(" << default_action->param() << ")";
+                }
+
+                cout << endl;
+
+                for (auto & syscall : *policy.second->rules()) {
+                    cout << "    Syscall: " << syscall.first << endl;
+
+                    for (auto & rule : *syscall.second) {
+                        cout
+                            << "      Action: "
+                            << Action::kind_to_string(rule.second->action_kind());
+
+                        if (rule.second->param() != -1) {
+                            cout << "(" << rule.second->param() << ")";
+                        }
+
+                        if (rule.first) {
+                            cout << " IF\n";
+                            rule.first->print(8);
+                        }
+                        else {
+                            std::cout << endl;
+                        }
+                    }
+                }
             }
         }
 
-        cout << "Policies:" << endl;
-
-        for (auto & policy : *policies) {
-            cout << "  - Policy: " << policy.first << endl;
-
-            cout << "    Default action: ";
-
-            auto default_action = policy.second->default_action();
-
-            cout << Action::kind_to_string(default_action->action_kind());
-
-            if (default_action->param() != -1) {
-                cout << "(" << default_action->param() << ")";
-            }
-
-            cout << endl;
-
-            for (auto & syscall : *policy.second->rules()) {
-                cout << "    Syscall: " << syscall.first << endl;
-
-                for (auto & rule : *syscall.second) {
-                    cout
-                        << "      Action: "
-                        << Action::kind_to_string(rule.second->action_kind());
-
-                    if (rule.second->param() != -1) {
-                        cout << "(" << rule.second->param() << ")";
-                    }
-
-                    if (rule.first) {
-                        cout << " IF\n";
-                        rule.first->print(8);
-                    }
-                    else {
-                        std::cout << endl;
-                    }
-                }
-            }
-        }
 
         auto compile_result = compile(result, "main");
 
         sock_fprog prog = compile_result;
-        std::string prog_str = compile_result;
 
-        cout << "Compiled program:\n" << endl;
+        if (options.has("print-bpf")) {
+            std::string prog_str = compile_result;
 
-        cout << prog_str << endl;
+            cout << "Compiled program:\n" << endl;
+
+            cout << prog_str << endl;
+        }
 
         if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
             perror("prctl");
@@ -104,7 +151,20 @@ int main(int argc, char const * argv[]) {
             return 1;
         }
 
-        cout << "Printed successfully" << endl;
+        auto _rest = options.rest();
+
+        auto size = _rest.size();
+
+        char ** _argv = new char*[size + 1];
+
+        for (uint i = 0; i < size; ++i) {
+            _argv[i] = new char[strlen(_rest[i]) + 1];
+            strcpy(_argv[i], _rest[i]);
+        }
+
+        _argv[size] = nullptr;
+
+        execvp(_argv[0], (char * const *) _argv);
     }
     catch (FileNotFoundError e) {
         cerr << e.what() << endl;
