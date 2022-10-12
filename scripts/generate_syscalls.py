@@ -29,6 +29,20 @@ gen::SyscallEntry get_syscall_entry(const std::string &name) {
     auto it = syscalls.find(name);
 
     if (it == syscalls.end()) {
+        try {
+            auto nr = std::stoi(name);
+            return gen::SyscallEntry({
+                .nr = nr,
+                .overloads = gen::SyscallOverloads(),
+            });
+        }
+        catch (std::invalid_argument &) {
+            // do nothing
+        }
+        catch (std::out_of_range &) {
+            throw std::runtime_error("Syscall number out of range");
+        }
+
         throw std::runtime_error("Unknown syscall: " + name);
     }
 

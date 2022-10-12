@@ -262,7 +262,18 @@ rule: action LBRACE rule_body[body] RBRACE {
 syscall_name: IDENTIFIER | soft_keyword
 
 syscall:
-    syscall_name[name] {
+    LBRACK INTEGER[nr] RBRACK {
+        $$ = new Syscall($nr->text(), $LBRACK->begin(), $RBRACK->end());
+    }
+    | LBRACK INTEGER[nr] RBRACK IF expr[condition] {
+        $$ = new Syscall(
+            $nr->text(),
+            $LBRACK->begin(),
+            $condition->end(),
+            $condition
+        );
+    }
+    | syscall_name[name] {
         $$ = new Syscall(
             $name->text(),
             $name->begin(),
@@ -273,7 +284,7 @@ syscall:
         $$ = new Syscall(
             $name->text(),
             $name->begin(),
-            $name->end(),
+            $condition->end(),
             $condition
         );
     }
@@ -281,7 +292,7 @@ syscall:
         $$ = new Syscall(
             $name->text(),
             $name->begin(),
-            $name->end()
+            $IF->end()
         );
     }
 
