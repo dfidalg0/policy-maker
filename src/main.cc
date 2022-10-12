@@ -45,6 +45,15 @@ int main(int argc, char const * argv[]) {
             .required = false,
             .positional = false,
             .description = "Print the final BPF code to stdout",
+        })
+        .add_arg({
+            .name = "entry",
+            .type = utils::ArgType::STRING,
+            .required = false,
+            .positional = false,
+            .description = "The entry point of the program",
+            .shorthand = "e",
+            .default_value = "main",
         });
 
     try {
@@ -128,8 +137,7 @@ int main(int argc, char const * argv[]) {
             }
         }
 
-
-        auto compile_result = compile(result, "main");
+        auto compile_result = compile(result, options.get("entry"));
 
         sock_fprog prog = compile_result;
 

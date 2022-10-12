@@ -11,9 +11,9 @@
 
 class CompileResult {
 public:
-    CompileResult(AnalysisResult * ar, std::string target);
-    CompileResult(Program * program, std::string target);
-    CompileResult(std::string filename, std::string target);
+    CompileResult(AnalysisResult * ar, std::string entry);
+    CompileResult(Program * program, std::string entry);
+    CompileResult(std::string filename, std::string entry);
 
     operator std::string();
 
@@ -22,8 +22,8 @@ private:
     std::vector<sock_filter> * _filter;
 };
 
-CompileResult compile(AnalysisResult * ar, std::string target);
-CompileResult compile(Program * program, std::string target);
-CompileResult compile(std::string filename, std::string target);
+CompileResult compile(AnalysisResult * ar, std::string entry);
+CompileResult compile(Program * program, std::string entry);
+CompileResult compile(std::string filename, std::string entry);
 
 #endif // __COMPILE_HH__

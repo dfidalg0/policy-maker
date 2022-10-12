@@ -14,26 +14,26 @@ struct SyscallRulesWithNumber {
 };
 
 // Cabeçalhos auxiliares
-AnalysisResultPolicy * get_policy(AnalysisResult * ar, std::string & target);
+AnalysisResultPolicy * get_policy(AnalysisResult * ar, std::string & entry);
 sock_filter get_seccomp_ret(Action * action);
 std::vector<SyscallRulesWithNumber> get_resolution_order(PolicyRules *rules);
 
 // Declaração da função de compilação
-CompileResult compile(AnalysisResult *ar, std::string target) {
-    return CompileResult(ar, target);
+CompileResult compile(AnalysisResult *ar, std::string entry) {
+    return CompileResult(ar, entry);
 }
 
-CompileResult compile(Program *program, std::string target) {
-    return CompileResult(program, target);
+CompileResult compile(Program *program, std::string entry) {
+    return CompileResult(program, entry);
 }
 
-CompileResult compile(std::string filename, std::string target) {
-    return CompileResult(filename, target);
+CompileResult compile(std::string filename, std::string entry) {
+    return CompileResult(filename, entry);
 }
 
 // Implementação da geração do filtro
-CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
-    auto policy = get_policy(ar, target);
+CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
+    auto policy = get_policy(ar, entry);
 
     auto order = get_resolution_order(policy->rules());
 
@@ -195,11 +195,11 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
     std::reverse(_filter->begin(), _filter->end());
 }
 
-CompileResult::CompileResult(Program *program, std::string target)
-    : CompileResult(analyze(program), target) {}
+CompileResult::CompileResult(Program *program, std::string entry)
+    : CompileResult(analyze(program), entry) {}
 
-CompileResult::CompileResult(std::string filename, std::string target)
-    : CompileResult(analyze(filename), target) {}
+CompileResult::CompileResult(std::string filename, std::string entry)
+    : CompileResult(analyze(filename), entry) {}
 
 // Conversão do filtro para código em C
 CompileResult::operator std::string() {
@@ -440,11 +440,11 @@ CompileResult::operator sock_fprog() {
     };
 }
 
-AnalysisResultPolicy *get_policy(AnalysisResult *ar, std::string &target) {
-    auto it = ar->policies()->find(target);
+AnalysisResultPolicy *get_policy(AnalysisResult *ar, std::string &entry) {
+    auto it = ar->policies()->find(entry);
 
     if (it == ar->policies()->end()) {
-        throw std::runtime_error("Policy not found: " + target);
+        throw std::runtime_error("Policy not found: " + entry);
     }
 
     return it->second;
