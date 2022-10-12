@@ -44,6 +44,7 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
     auto default_action = get_seccomp_ret(policy->default_action());
 
     // Vamos construir o filtro de trás pra frente para depois revertê-lo
+    _filter->push_back(default_action);
 
     // Para isso, vamos precisar de um mapa de posições, de forma que seremos
     // capazes de encontrar a posição do início da validação de uma syscall
@@ -66,8 +67,13 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
         auto current_length = _filter->size();
 
         // Match. No caso curr_nr == nr[i]
-        // Caso nenhuma regra passe, o filtro vai para o default_action
-        _filter->push_back(default_action);
+        // Caso nenhuma regra passe, o filtro vai para o default_action,
+        // que está na posição 0.
+        if (current_length - 1) {
+            _filter->push_back(
+                BPF_STMT(BPF_JMP | BPF_JA, (uint) current_length - 1)
+            );
+        }
 
         // Como estamos construindo o filtro de trás pra frente, precisamos
         // iterar sobre as regras na ordem inversa.
@@ -132,37 +138,36 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
 
         // Último JUMP. No caso curr_nr < nr[i]. Saltamos em direção ao filho
         // esquerdo
-        if (left_son_pos == 0) {
-            _filter->push_back(default_action);
-        }
-        else {
-            _filter->push_back(
-                BPF_STMT(
-                    BPF_JMP | BPF_JA | BPF_K,
-                    (uint) _filter->size() - left_son_pos - 1
-                )
-            );
-        }
+        uint jump_size = _filter->size() - left_son_pos - 1;
+        bool additional_instruction = jump_size > 0xff;
 
+        // Se o jump for muito grande, precisamos inserir uma instrução adicional
+        if (additional_instruction) {
+            _filter->push_back(
+                BPF_STMT(BPF_JMP | BPF_JA | BPF_K, jump_size)
+            );
+            jump_size = 0;
+        }
 
         // Jump condicional. Aqui, já sabemos que curr_nr <= nr[i]. Se
         // curr_nr == nr[i], saltamos para a validação das regras. Caso
         // contrário, saltamos para a instrução de JUMP definida acima
         _filter->push_back(
-            BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, nr, 1, 0)
+            BPF_JUMP(
+                BPF_JMP | BPF_JEQ | BPF_K, nr,
+                additional_instruction, (__u8) jump_size
+            )
         );
 
         // No caso curr_nr > nr[i]. Saltamos em direção ao filho direito
-        if (right_son_pos == 0) {
-            _filter->push_back(default_action);
-        }
-        else {
+        jump_size = _filter->size() - right_son_pos - 1;
+        additional_instruction = jump_size > 0xff;
+
+        if (additional_instruction) {
             _filter->push_back(
-                BPF_STMT(
-                    BPF_JMP | BPF_JA | BPF_K,
-                    (uint) _filter->size() - right_son_pos - 1
-                )
+                BPF_STMT(BPF_JMP | BPF_JA | BPF_K, jump_size)
             );
+            jump_size = 0;
         }
 
         // Jump condicional. Aqui, vamos verificar se curr_nr > nr[i]. Se
@@ -170,7 +175,10 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string target) {
         // contrário, saltamos para a instrução de JUMP condicional acima, que
         // checará se curr_nr == nr[i]
         _filter->push_back(
-            BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, nr, 0, 1)
+            BPF_JUMP(
+                BPF_JMP | BPF_JGT | BPF_K, nr,
+                (__u8) jump_size, additional_instruction
+            )
         );
 
         auto pos = _filter->size() - 1;
