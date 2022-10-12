@@ -17,6 +17,9 @@ namespace utils {
     class Arg {
     public:
         Arg(ArgType type = ArgType::ABSCENT, char const * value = "");
+        Arg(char const * value);
+        Arg(int value);
+        Arg(double value);
 
         inline ArgType type() const { return _type; }
 
@@ -43,6 +46,7 @@ namespace utils {
             bool positional;
             std::string description;
             std::string shorthand = "";
+            Arg default_value = Arg();
         };
 
         typedef std::vector<ArgInfo> PositionalArgSpec;

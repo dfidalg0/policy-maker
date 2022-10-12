@@ -126,8 +126,14 @@ Result::Result(int argc, char const* argv[], const ArgSpec& spec) {
     }
 
     for (auto& [name, info] : spec.named) {
-        if (info.required && _args.find(name) == _args.end()) {
-            throw std::runtime_error("Missing required argument: " + name);
+        if (_args.find(name) == _args.end()) {
+            if (info.required) {
+                throw std::runtime_error("Missing required argument: " + info.name);
+            }
+
+            if (info.type != ArgType::NONE) {
+                _args[name] = info.default_value;
+            }
         }
     }
 }
@@ -189,6 +195,12 @@ CmdParser & CmdParser::add_arg(const ArgInfo& info) {
         }
 
         _spec.positional.push_back(info);
+    }
+
+    if (info.required && info.default_value.type() != ArgType::ABSCENT) {
+        throw std::runtime_error(
+            "Required argument with default value: " + info.name
+        );
     }
 
     _add_to_map(info.name, info);
@@ -309,6 +321,21 @@ Arg::Arg(ArgType type, char const * value): _type(type) {
             _value._float = std::stod(value);
             break;
     }
+}
+
+Arg::Arg(char const * value) {
+    _type = ArgType::STRING;
+    _value._string = value;
+}
+
+Arg::Arg(int value) {
+    _type = ArgType::INT;
+    _value._int = value;
+}
+
+Arg::Arg(double value) {
+    _type = ArgType::FLOAT;
+    _value._float = value;
 }
 
 Arg::operator int() const {
