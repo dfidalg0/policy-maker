@@ -1,0 +1,40 @@
+// Essa política permite a execução de programas básicos em Python 3 em modo não
+// interativo.
+
+policy main {
+    allow {
+        access,
+        arch_prctl,
+        brk,
+        close,
+        dup,
+        execve,
+        exit_group,
+        fcntl,
+        futex,
+        getcwd,
+        getdents64,
+        getegid,
+        geteuid,
+        getgid,
+        getrandom,
+        getuid,
+        ioctl,
+        lseek,
+        mmap,
+        mprotect,
+        munmap,
+        newfstatat,
+        openat,
+        pread64,
+        prlimit64,
+        read,
+        readlink,
+        rseq,
+        rt_sigaction,
+        set_robust_list,
+        set_tid_address,
+        sysinfo,
+        write,
+    }
+}
