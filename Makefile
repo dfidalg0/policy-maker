@@ -16,7 +16,7 @@ parser: target/parser.yy.cc target/parser.yy.hh
 
 syscalls: target/syscalls.hh target/syscalls/$(ARCH).hh
 
-target/syscalls.hh target/syscalls/$(ARCH).hh: scripts/generate_syscalls.py | target
+target/syscalls.hh target/syscalls/$(ARCH).hh: scripts/generate_syscalls.py scripts/syscalls/$(ARCH).csv | target
 	python3 scripts/generate_syscalls.py $(ARCH)
 
 target/lexer.yy.cc: src/lexicon/main.l | target
