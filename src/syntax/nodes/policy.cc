@@ -1,13 +1,5 @@
 #include <syntax/nodes/policy.hh>
 
-Policy::~Policy() {
-    for (auto rule : *_rules) {
-        delete rule;
-    }
-
-    delete _rules;
-}
-
 void Policy::print(uint level) {
     std::cout << indent(level) << "> Policy Declaration: " << std::endl;
 

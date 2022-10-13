@@ -17,8 +17,6 @@ public:
     inline std::vector<Expr*> args() const { return *_args; }
 
     void print(uint level = 0) override;
-
-    ~FunctionCall() override;
 };
 
 #endif // __FUNCTION_CALL_HH__

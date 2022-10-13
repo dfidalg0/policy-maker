@@ -42,8 +42,6 @@ public:
     inline OpKind op() const { return _op; }
 
     void print(uint level = 0) override;
-
-    ~UnaryExpr() override;
 };
 
 #endif // __UNARY_EXPR_HH__

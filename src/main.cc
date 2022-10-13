@@ -59,14 +59,16 @@ int main(int argc, char const * argv[]) {
     try {
         auto options = cmd_parser.parse(argc, argv);
 
-        auto ast = parse(options.get("input"));
+        auto ast = parse(options.get("input")).release();
 
         if (options.has("print-ast")) {
             cout << "AST:" << endl;
             ast->print();
         }
 
-        auto result = analyze(ast);
+        auto result = analyze(ast).release();
+
+        delete ast;
 
         if (options.has("print-analyzed-ast")) {
             cout << "Analyzed AST:" << endl;
@@ -138,6 +140,8 @@ int main(int argc, char const * argv[]) {
         }
 
         auto compile_result = compile(result, options.get("entry"));
+
+        delete result;
 
         sock_fprog prog = compile_result;
 

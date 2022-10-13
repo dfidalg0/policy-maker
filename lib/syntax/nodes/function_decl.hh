@@ -15,8 +15,6 @@ public:
     FunctionDecl(Position begin, Position end, std::string name, std::vector<std::string> * args, Expr * body)
         : Stmt(Node::Kind::function_decl, begin, end), _name(name), _args(args), _body(body) {}
 
-    ~FunctionDecl();
-
     inline std::string name() const { return _name; }
     inline std::vector<std::string> args() const { return *_args; }
     inline Expr* body() const { return _body; }

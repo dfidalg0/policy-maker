@@ -6,6 +6,8 @@
 #include <syscall.h>
 
 #include <semantics/main.hh>
+#include <compile_expr.hh>
+
 #include <string>
 #include <vector>
 
@@ -19,7 +21,7 @@ public:
 
     operator sock_fprog();
 private:
-    std::vector<sock_filter> * _filter;
+    std::unique_ptr<FilterVector> _filter;
 };
 
 CompileResult compile(AnalysisResult * ar, std::string entry);

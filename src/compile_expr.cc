@@ -2,10 +2,10 @@
 
 BinaryExpr::OpKind get_oposite(BinaryExpr::OpKind op);
 
-FilterVector * compile_expr(Expr * expr) {
+std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
     static auto pool = RegisterPool();
 
-    auto filter = new std::vector<struct sock_filter>();
+    auto filter = std::make_unique<FilterVector>();
 
     using kind = Expr::Kind;
 
@@ -29,8 +29,6 @@ FilterVector * compile_expr(Expr * expr) {
             auto operand = compile_expr(unary->operand());
 
             filter->insert(filter->end(), operand->begin(), operand->end());
-
-            delete operand;
 
             switch (unary->op()) {
                 case UnaryExpr::OpKind::neg: {
@@ -98,25 +96,18 @@ FilterVector * compile_expr(Expr * expr) {
 
                 // L é uma constante falsa
                 if (Lconst) {
-                    auto Rfilter = compile_expr(R);
-                    delete filter;
-                    filter = Rfilter;
-                    break;
+                    return compile_expr(R);
                 }
 
                 // R é uma constante falsa
                 if (Rconst) {
-                    auto Lfilter = compile_expr(L);
-                    delete filter;
-                    filter = Lfilter;
-                    break;
+                    return compile_expr(L);
                 }
 
                 auto Rfilter = compile_expr(R);
 
                 auto Lfilter = compile_expr(L);
                 filter->insert(filter->end(), Lfilter->begin(), Lfilter->end());
-                delete Lfilter;
 
                 __u8 rsize = Rfilter->size();
 
@@ -125,7 +116,6 @@ FilterVector * compile_expr(Expr * expr) {
                 );
 
                 filter->insert(filter->end(), Rfilter->begin(), Rfilter->end());
-                delete Rfilter;
 
                 break;
             }
@@ -147,25 +137,18 @@ FilterVector * compile_expr(Expr * expr) {
 
                 // L é uma constante verdadeira
                 if (Lconst) {
-                    auto Rfilter = compile_expr(R);
-                    delete filter;
-                    filter = Rfilter;
-                    break;
+                    return compile_expr(R);
                 }
 
                 // R é uma constante verdadeira
                 if (Rconst) {
-                    auto Lfilter = compile_expr(L);
-                    delete filter;
-                    filter = Lfilter;
-                    break;
+                    return compile_expr(L);
                 }
 
                 auto Rfilter = compile_expr(R);
 
                 auto Lfilter = compile_expr(L);
                 filter->insert(filter->end(), Lfilter->begin(), Lfilter->end());
-                delete Lfilter;
 
                 __u8 rsize = Rfilter->size();
 
@@ -174,7 +157,6 @@ FilterVector * compile_expr(Expr * expr) {
                 );
 
                 filter->insert(filter->end(), Rfilter->begin(), Rfilter->end());
-                delete Rfilter;
 
                 break;
             }
@@ -206,7 +188,6 @@ FilterVector * compile_expr(Expr * expr) {
 
                         auto r_code = compile_expr(R);
                         filter->insert(filter->end(), r_code->begin(), r_code->end());
-                        delete r_code;
 
                         // Carregamos o acumulador no registro de índice
                         filter->push_back(
@@ -226,7 +207,6 @@ FilterVector * compile_expr(Expr * expr) {
 
                 auto l_code = compile_expr(L);
                 filter->insert(filter->end(), l_code->begin(), l_code->end());
-                delete l_code;
 
                 source_reg = BPF_K;
                 k = right_value;
@@ -236,7 +216,6 @@ FilterVector * compile_expr(Expr * expr) {
                 // Carregamos a expressão direita no acumulador
                 auto r_code = compile_expr(R);
                 filter->insert(filter->end(), r_code->begin(), r_code->end());
-                delete r_code;
 
                 // Obtemos um espaço livre na memória
                 auto r_reg = pool.get();
@@ -250,7 +229,6 @@ FilterVector * compile_expr(Expr * expr) {
                 // Carregamos a expressão esquerda no acumulador
                 auto l_code = compile_expr(L);
                 filter->insert(filter->end(), l_code->begin(), l_code->end());
-                delete l_code;
 
                 // Carregamos o valor da memória no registro de índice
                 filter->push_back(

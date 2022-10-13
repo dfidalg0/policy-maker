@@ -1,13 +1,5 @@
 #include <syntax/nodes/program.hh>
 
-Program::~Program() {
-    for (auto stmt : *_stmts) {
-        delete stmt;
-    }
-
-    delete _stmts;
-}
-
 void Program::print(uint level) {
     std::cout << indent(level) << "> Program: " << std::endl;
 

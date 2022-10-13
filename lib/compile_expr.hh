@@ -2,6 +2,7 @@
 #define __COMPILE_EXPR_HH__
 
 #include <vector>
+#include <memory>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
 #include <syntax/nodes.hh>
@@ -10,12 +11,12 @@
 
 typedef std::vector<sock_filter> FilterVector;
 
-FilterVector * compile_expr(Expr * expr);
+std::unique_ptr<FilterVector> compile_expr(Expr * expr);
 
 class RegisterPool {
 public:
     class Register {
-       private:
+    private:
         Register(uint reg) : _nr(reg), _is_used(false) {}
 
         bool _is_used;
@@ -23,7 +24,7 @@ public:
 
         friend class RegisterPool;
 
-       public:
+    public:
         void release() {
             _is_used = false;
         }

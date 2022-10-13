@@ -5,6 +5,7 @@
     #include <sstream>
     #include <vector>
     #include <cstdio>
+    #include <memory>
     #include <errors.hh>
 
     typedef class Token Token;
@@ -33,7 +34,7 @@
 
     static Program * program;
 
-    Program * parse(std::string filename);
+    std::unique_ptr<Program> parse(std::string filename);
 
     inline BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
 
@@ -502,7 +503,7 @@ void yyerror(ReturnValue * ret, char const * err) {
     std::cerr << err << std::endl;
 }
 
-Program * parse(std::string filename) {
+std::unique_ptr<Program> parse(std::string filename) {
     auto file = fopen(filename.c_str(), "r");
 
     if (!file) {
@@ -525,7 +526,7 @@ Program * parse(std::string filename) {
         throw ParseError(filename);
     }
 
-    return program;
+    return std::unique_ptr<Program>(program);
 }
 
 BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op) {

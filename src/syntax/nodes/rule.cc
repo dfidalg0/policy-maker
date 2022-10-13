@@ -1,13 +1,5 @@
 #include <syntax/nodes/rule.hh>
 
-Rule::~Rule() {
-    delete _action;
-    for (auto * syscall : *_syscalls) {
-        delete syscall;
-    }
-    delete _syscalls;
-}
-
 void Rule::print(uint level) {
     std::cout << indent(level) << "> Rule: " << std::endl;
 

@@ -7,7 +7,7 @@
 using namespace semantics;
 
 template <class L, class R>
-static Constant *operate(Constant *a, BinaryExpr::OpKind op, Constant *b) {
+static std::unique_ptr<Constant> operate(Constant *a, BinaryExpr::OpKind op, Constant *b) {
     L left = *a;
     R right = *b;
 
@@ -15,95 +15,113 @@ static Constant *operate(Constant *a, BinaryExpr::OpKind op, Constant *b) {
 
     switch (op) {
         case opKind::add:
-            return new Constant(
+            return std::make_unique<Constant>(
                 add(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::sub:
-            return new Constant(
+            return std::make_unique<Constant>(
                 subtract(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::mul:
-            return new Constant(
+            return std::make_unique<Constant>(
                 multiply(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::div:
-            return new Constant(
+            return std::make_unique<Constant>(
                 divide(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::mod:
-            return new Constant(
+            return std::make_unique<Constant>(
                 modulo(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::bit_and:
-            return new Constant(
+            return std::make_unique<Constant>(
                 bit_and(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::bit_or:
-            return new Constant(
+            return std::make_unique<Constant>(
                 bit_or(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::bit_xor:
-            return new Constant(
+            return std::make_unique<Constant>(
                 bit_xor(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::bit_lsh:
-            return new Constant(
+            return std::make_unique<Constant>(
                 bit_lsh(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::bit_rsh:
-            return new Constant(
+            return std::make_unique<Constant>(
                 bit_rsh(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::eq:
-            return new Constant(
+            return std::make_unique<Constant>(
                 equal(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::ne:
-            return new Constant(
+            return std::make_unique<Constant>(
                 not_equal(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::lt:
-            return new Constant(
+            return std::make_unique<Constant>(
                 less_than(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::le:
-            return new Constant(
+            return std::make_unique<Constant>(
                 less_than_equal(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::gt:
-            return new Constant(
+            return std::make_unique<Constant>(
                 greater_than(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::ge:
-            return new Constant(
+            return std::make_unique<Constant>(
                 greater_than_equal(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::land:
-            return new Constant(
+            return std::make_unique<Constant>(
                 logical_and(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         case opKind::lor:
-            return new Constant(
+            return std::make_unique<Constant>(
                 logical_or(left, right),
                 a->begin(),
-                b->end());
+                b->end()
+            );
         default:
             throw std::runtime_error("Invalid operation");
     }
@@ -151,13 +169,13 @@ Expr * Scope::evaluate(Expr * expr) {
             auto function = (semantics::Function *) symbol;
             auto args = call->args();
 
-            auto evaluated_args = std::vector<Expr*>(args.size());
+            auto evaluated_args = std::vector<Expr *>(args.size());
 
             std::transform(
                 args.begin(),
                 args.end(),
                 evaluated_args.begin(),
-                [this](Expr * expr) -> Expr * {
+                [this](Expr * expr) {
                     return this->evaluate(expr);
                 }
             );
@@ -209,12 +227,12 @@ Expr * Scope::evaluate(Expr * expr) {
         case Expr::Kind::unary_expr: {
             auto unary = (UnaryExpr*) expr;
 
-            return simplify(unary);
+            return simplify(unary).release();
         }
         case Expr::Kind::binary_expr: {
             auto binary = (BinaryExpr*) expr;
 
-            return simplify(binary);
+            return simplify(binary).release();
         }
         default: {
             return expr;
@@ -222,7 +240,7 @@ Expr * Scope::evaluate(Expr * expr) {
     }
 }
 
-Expr * Scope::simplify(UnaryExpr * unary) {
+std::unique_ptr<Expr> Scope::simplify(UnaryExpr * unary) {
     using type = Constant::Type;
     using opKind = UnaryExpr::OpKind;
 
@@ -232,7 +250,7 @@ Expr * Scope::simplify(UnaryExpr * unary) {
     auto end = unary->end();
 
     if (operand->kind() != Expr::Kind::constant) {
-        return new UnaryExpr(
+        return std::make_unique<UnaryExpr>(
             operand,
             op,
             begin,
@@ -248,16 +266,16 @@ Expr * Scope::simplify(UnaryExpr * unary) {
 
             switch (op) {
                 case opKind::neg: {
-                    return new Constant(-value, begin, end);
+                    return std::make_unique<Constant>(-value, begin, end);
                 }
                 case opKind::pos: {
-                    return new Constant(+value, begin, end);
+                    return std::make_unique<Constant>(+value, begin, end);
                 }
                 case opKind::bit_not: {
-                    return new Constant(~value, begin, end);
+                    return std::make_unique<Constant>(~value, begin, end);
                 }
                 case opKind::lnot: {
-                    return new Constant(!value, begin, end);
+                    return std::make_unique<Constant>(!value, begin, end);
                 }
             }
         }
@@ -266,23 +284,23 @@ Expr * Scope::simplify(UnaryExpr * unary) {
 
             switch (op) {
                 case opKind::neg: {
-                    return new Constant(-value, begin, end);
+                    return std::make_unique<Constant>(-value, begin, end);
                 }
                 case opKind::pos: {
-                    return new Constant(+value, begin, end);
+                    return std::make_unique<Constant>(+value, begin, end);
                 }
                 case opKind::bit_not: {
-                    return new Constant(~value, begin, end);
+                    return std::make_unique<Constant>(~value, begin, end);
                 }
                 case opKind::lnot: {
-                    return new Constant(!value, begin, end);
+                    return std::make_unique<Constant>(!value, begin, end);
                 }
             }
         }
         case type::null: {
             switch(op) {
                 case opKind::lnot: {
-                    return new Constant(true, begin, end);
+                    return std::make_unique<Constant>(true, begin, end);
                 }
                 default: {
                     throw std::runtime_error("Invalid operation");
@@ -294,7 +312,7 @@ Expr * Scope::simplify(UnaryExpr * unary) {
 
             switch (op) {
                 case opKind::lnot: {
-                    return new Constant(!value.empty(), begin, end);
+                    return std::make_unique<Constant>(!value.empty(), begin, end);
                 }
                 default: {
                     throw std::runtime_error("Invalid operation");
@@ -304,7 +322,7 @@ Expr * Scope::simplify(UnaryExpr * unary) {
     }
 }
 
-Expr * Scope::simplify(BinaryExpr * binary) {
+std::unique_ptr<Expr> Scope::simplify(BinaryExpr * binary) {
     using type = Constant::Type;
     using kind = Expr::Kind;
 
@@ -321,7 +339,7 @@ Expr * Scope::simplify(BinaryExpr * binary) {
         left->kind() != kind::constant ||
         right->kind() != kind::constant
     ) {
-        return new BinaryExpr(
+        return std::make_unique<BinaryExpr>(
             left,
             right,
             op,
@@ -359,5 +377,5 @@ Expr * Scope::simplify(BinaryExpr * binary) {
             return operate<std::string, std::string>(cl, op, cr);
     }
 
-    return new BinaryExpr(left, right, op, begin, end);
+    return std::make_unique<BinaryExpr>(left, right, op, begin, end);
 }

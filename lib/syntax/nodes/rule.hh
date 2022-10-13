@@ -14,7 +14,6 @@ private:
 public:
     Rule(Action * action, std::vector<Syscall *> * syscalls, Position begin, Position end)
         : Node(Node::Kind::rule, begin, end), _action(action), _syscalls(syscalls) {}
-    ~Rule();
 
     inline Action * action() { return _action; }
     inline std::vector<Syscall *> syscalls() { return *_syscalls; }

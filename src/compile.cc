@@ -5,7 +5,6 @@
 #include <utility>
 #include <stddef.h>
 
-#include <compile_expr.hh>
 
 // Tipos auxiliares
 struct SyscallRulesWithNumber {
@@ -37,7 +36,7 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
 
     auto order = get_resolution_order(policy->rules());
 
-    _filter = new std::vector<sock_filter>();
+    _filter = std::make_unique<FilterVector>();
 
     using kind = Expr::Kind;
 
@@ -126,8 +125,6 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
             for (auto it = compiled_expr->rbegin(); it != compiled_expr->rend(); it++) {
                 _filter->push_back(*it);
             }
-
-            delete compiled_expr;
         }
 
         auto left_son = 2 * i + 1;
@@ -196,10 +193,10 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
 }
 
 CompileResult::CompileResult(Program *program, std::string entry)
-    : CompileResult(analyze(program), entry) {}
+    : CompileResult(analyze(program).get(), entry) {}
 
 CompileResult::CompileResult(std::string filename, std::string entry)
-    : CompileResult(analyze(filename), entry) {}
+    : CompileResult(analyze(filename).get(), entry) {}
 
 // Conversão do filtro para código em C
 CompileResult::operator std::string() {

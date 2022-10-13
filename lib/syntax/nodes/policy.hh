@@ -21,8 +21,6 @@ public:
     ) : Stmt(Node::Kind::policy, begin, end),
         _name(name), _rules(rules), _default_action(default_action) {}
 
-    ~Policy();
-
     inline std::string name() { return _name; }
     inline std::vector<Rule *> rules() { return *_rules; }
     inline Action * default_action() { return _default_action; }

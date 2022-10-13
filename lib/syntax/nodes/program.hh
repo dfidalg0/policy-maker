@@ -15,8 +15,6 @@ public:
         std::vector<Stmt *> * stmts
     ) : Node(Node::Kind::program, begin, end), _stmts(stmts) {};
 
-    ~Program();
-
     inline std::vector<Stmt *> stmts() { return *_stmts; }
 
     void print(uint level = 0) override;

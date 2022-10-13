@@ -1,10 +1,5 @@
 #include <syntax/nodes/function_decl.hh>
 
-FunctionDecl::~FunctionDecl() {
-    delete _body;
-    delete _args;
-}
-
 void FunctionDecl::print(uint level) {
     std::cout << indent(level) << "> Function Declaration:\n";
     std::cout << indent(level + 2) << "- Name: " << _name << "\n";

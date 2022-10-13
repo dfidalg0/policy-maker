@@ -35,12 +35,12 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
     return params;
 }
 
-AnalysisResult * analyze(std::string filename) {
-    Program * prog = parse(filename);
+std::unique_ptr<AnalysisResult> analyze(std::string filename) {
+    Program * prog = parse(filename).get();
     return analyze(prog);
 }
 
-AnalysisResult * analyze(Program *prog) {
+std::unique_ptr<AnalysisResult> analyze(Program *prog) {
     // Primeiro, definimos o escopo global
     auto global_scope = new Scope();
 
@@ -139,5 +139,5 @@ AnalysisResult * analyze(Program *prog) {
         }
     }
 
-    return new AnalysisResult(policies, global_scope);
+    return std::make_unique<AnalysisResult>(policies, global_scope);
 }

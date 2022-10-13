@@ -14,8 +14,6 @@ public:
         Expr * condition = nullptr
     ) : Node(Node::Kind::syscall, begin, end), _name(name), _condition(condition) {};
 
-    ~Syscall();
-
     void print(uint level = 0) override;
 
     inline std::string name() const { return _name; }

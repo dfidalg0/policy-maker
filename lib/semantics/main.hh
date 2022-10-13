@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <map>
+#include <memory>
 
 typedef std::vector<std::pair<Expr *, Action *>> SyscallRules;
 typedef std::map<unsigned, SyscallRules *> PolicyRules;
@@ -40,7 +41,7 @@ private:
     Scope * _scope;
 };
 
-AnalysisResult * analyze(std::string filename);
-AnalysisResult * analyze (Program * prog);
+std::unique_ptr<AnalysisResult> analyze(std::string filename);
+std::unique_ptr<AnalysisResult> analyze(Program *prog);
 
 #endif // __SEMANTICS_MAIN_HH__

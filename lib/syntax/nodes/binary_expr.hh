@@ -58,8 +58,6 @@ public:
     inline OpKind op() const { return _op; }
 
     void print(uint level = 0) override;
-
-    ~BinaryExpr() override;
 };
 
 #endif // __BINARY_EXPR_HH__
