@@ -2,6 +2,7 @@
 #include <syntax.hh>
 #include <semantics.hh>
 #include <algorithm>
+#include <memory>
 #include <semantics/operations.h>
 
 using namespace semantics;
@@ -175,8 +176,8 @@ Expr * Scope::evaluate(Expr * expr) {
                 args.begin(),
                 args.end(),
                 evaluated_args.begin(),
-                [this](Expr * expr) {
-                    return this->evaluate(expr);
+                [this](std::shared_ptr<Expr> expr) {
+                    return this->evaluate(expr.get());
                 }
             );
 

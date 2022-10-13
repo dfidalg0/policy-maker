@@ -6,7 +6,7 @@ using namespace semantics;
 
 Function::Function(
     FunctionDecl * decl,
-    Scope * scope
+    std::shared_ptr<Scope> scope
 ) : Symbol(Kind::function, decl->name()) {
     _body = decl->body();
     _decl_scope = scope;

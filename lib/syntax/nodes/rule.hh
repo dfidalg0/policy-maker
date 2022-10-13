@@ -1,24 +1,33 @@
-#ifndef __RULE_HH__
-#define __RULE_HH__
+#ifndef __SYNTAX_NODES_RULE_HH__
+#define __SYNTAX_NODES_RULE_HH__
 
 #include "_node.hh"
 #include "action.hh"
 #include "syscall.hh"
 #include <vector>
+#include <memory>
+
+namespace syntax {
+    typedef std::vector<std::shared_ptr<Syscall>> SyscallsList;
+}
 
 class Rule : public Node {
 private:
-    Action * _action;
-    std::vector<Syscall *> * _syscalls;
+    std::shared_ptr<Action> _action;
+    std::shared_ptr<syntax::SyscallsList> _syscalls;
 
 public:
-    Rule(Action * action, std::vector<Syscall *> * syscalls, Position begin, Position end)
-        : Node(Node::Kind::rule, begin, end), _action(action), _syscalls(syscalls) {}
+    Rule(
+        std::shared_ptr<Action> action,
+        std::shared_ptr<syntax::SyscallsList> syscalls,
+        Position begin = Position(0, 0),
+        Position end = Position(0, 0)
+    ) : Node(Node::Kind::rule, begin, end), _action(action), _syscalls(syscalls) {}
 
-    inline Action * action() { return _action; }
-    inline std::vector<Syscall *> syscalls() { return *_syscalls; }
+    inline std::shared_ptr<Action> action() const { return _action; }
+    inline syntax::SyscallsList syscalls() { return *_syscalls; }
 
     void print(uint level = 0) override;
 };
 
-#endif // __RULE_HH__
+#endif // __SYNTAX_NODES_RULE_HH__

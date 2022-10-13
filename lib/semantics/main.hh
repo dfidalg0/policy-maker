@@ -10,7 +10,7 @@
 #include <map>
 #include <memory>
 
-typedef std::vector<std::pair<Expr *, Action *>> SyscallRules;
+typedef std::vector<std::pair<std::shared_ptr<Expr>, std::shared_ptr<Action>>> SyscallRules;
 typedef std::map<unsigned, SyscallRules *> PolicyRules;
 
 class AnalysisResultPolicy {

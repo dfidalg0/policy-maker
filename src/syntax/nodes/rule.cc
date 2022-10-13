@@ -7,7 +7,7 @@ void Rule::print(uint level) {
 
     if (_syscalls->size()) {
         std::cout << indent(level + 2) << "- Syscalls: " << std::endl;
-        for (auto * syscall : *_syscalls) {
+        for (auto syscall : *_syscalls) {
             syscall->print(level + 4);
         }
     }

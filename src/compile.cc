@@ -82,11 +82,11 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
             // Se não foi especificada uma condição, é porque esta será tratada
             // como sempre verdadeira.
             if (expr == nullptr) {
-                expr = new Constant(true, { 0, 0 }, { 0, 0 });
+                expr = std::make_shared<Constant>(true);
             }
 
             auto constant = expr->kind() == kind::constant
-                ? (Constant *) expr
+                ? std::static_pointer_cast<Constant>(expr)
                 : nullptr;
 
             // Se a condição for uma constante verdadeira, podemos ignorar
@@ -99,7 +99,7 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
                     _filter->pop_back();
                 }
 
-                _filter->push_back(get_seccomp_ret(action));
+                _filter->push_back(get_seccomp_ret(action.get()));
 
                 continue;
             }
@@ -111,7 +111,7 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
             }
 
             // Destino da expressão verdadeira
-            _filter->push_back(get_seccomp_ret(action));
+            _filter->push_back(get_seccomp_ret(action.get()));
 
             // Jump para a finalização ou para a próxima expressão
             _filter->push_back(
@@ -120,7 +120,7 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
                 BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, 0, 0, 1)
             );
 
-            auto compiled_expr = compile_expr(expr);
+            auto compiled_expr = compile_expr(expr.get());
 
             for (auto it = compiled_expr->rbegin(); it != compiled_expr->rend(); it++) {
                 _filter->push_back(*it);

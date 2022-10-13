@@ -42,7 +42,7 @@ std::unique_ptr<AnalysisResult> analyze(std::string filename) {
 
 std::unique_ptr<AnalysisResult> analyze(Program *prog) {
     // Primeiro, definimos o escopo global
-    auto global_scope = new Scope();
+    auto global_scope = std::make_shared<Scope>();
 
     using kind = Node::Kind;
 
@@ -50,16 +50,16 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
         // E o atualizamos com as declarações globais
         switch (stmt->kind()) {
             case kind::function_decl: {
-                auto func_decl = (FunctionDecl *) stmt;
-                auto func = new semantics::Function(func_decl, global_scope);
+                auto func_decl = std::static_pointer_cast<FunctionDecl>(stmt);
+                auto func = new semantics::Function(func_decl.get(), global_scope);
                 global_scope->add(func);
                 break;
             }
             case kind::variable_decl: {
-                auto var_decl = (VariableDecl *) stmt;
+                auto var_decl = std::static_pointer_cast<VariableDecl>(stmt);
 
                 auto name = var_decl->name();
-                auto value = global_scope->evaluate(var_decl->value());
+                auto value = global_scope->evaluate(var_decl->value().get());
 
                 if (value->kind() != kind::constant) {
                     throw std::runtime_error("Global variables must be constant");
@@ -78,7 +78,7 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
     for (auto stmt : prog->stmts()) {
         if (stmt->kind() != kind::policy) continue;
 
-        auto policy_stmt = (Policy *) stmt;
+        auto policy_stmt = std::static_pointer_cast<Policy>(stmt);
         auto name = policy_stmt->name();
         auto rules = policy_stmt->rules();
 
@@ -127,10 +127,10 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
                     );
                 }
 
-                auto evaluated_condition = scope->evaluate(condition);
+                auto evaluated_condition = scope->evaluate(condition.get());
 
                 syscall_rules->push_back({
-                    evaluated_condition,
+                    std::shared_ptr<Expr>(evaluated_condition),
                     rule->action()
                 });
 

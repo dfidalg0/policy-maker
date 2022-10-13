@@ -11,7 +11,7 @@
 
 class Scope {
 public:
-    Scope(Scope* parent = nullptr) : _parent(parent){};
+    Scope(std::shared_ptr<Scope> parent = nullptr) : _parent(parent){};
 
     Scope add(Symbol* symbol);
     Symbol * find(std::string name);
@@ -21,7 +21,7 @@ public:
         return _symbols;
     }
 private:
-    Scope * _parent;
+    std::shared_ptr<Scope> _parent;
     std::unordered_map<std::string, Symbol*> _symbols;
 
     std::unique_ptr<Expr> simplify(UnaryExpr *);

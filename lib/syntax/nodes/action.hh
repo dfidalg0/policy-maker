@@ -1,5 +1,5 @@
-#ifndef __ACTION_HH__
-#define __ACTION_HH__
+#ifndef __SYNTAX_NODES_ACTION_HH__
+#define __SYNTAX_NODES_ACTION_HH__
 
 #include <exception>
 #include <lexicon/token.hh>
@@ -31,7 +31,12 @@ public:
 
     static Kind kind_from_token(Token * token);
 
-    Action(Kind kind, Position begin, Position end, int param = -1)
+    Action(
+        Kind kind,
+        int param = -1,
+        Position begin = Position(0, 0),
+        Position end = Position(0, 0)
+    )
         : Node(Node::Kind::action, begin, end), _action_kind(kind), _param(param) {}
 
     inline Kind action_kind() const { return _action_kind; }
@@ -44,4 +49,4 @@ private:
     int _param;
 };
 
-#endif // __ACTION_HH__
+#endif // __SYNTAX_NODES_ACTION_HH__

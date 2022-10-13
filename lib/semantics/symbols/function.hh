@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <syntax/nodes/function_decl.hh>
 
 #include "_symbol.hh"
@@ -11,15 +12,15 @@
 namespace semantics {
     class Function : public Symbol {
     public:
-        Function(FunctionDecl * decl, Scope * scope);
-        Expr * call(std::vector<Expr*> args);
+        Function(FunctionDecl * decl, std::shared_ptr<Scope> scope);
+        Expr * call(std::vector<std::shared_ptr<Expr>> args);
         virtual ~Function(){};
 
         inline const std::vector<std::string> &args() const { return _args; }
-        inline Expr * body() const { return _body; }
+        inline std::shared_ptr<Expr> body() const { return _body; }
     private:
-        Expr * _body;
-        Scope * _decl_scope;
+        std::shared_ptr<Expr> _body;
+        std::shared_ptr<Scope> _decl_scope;
         std::vector<std::string> _args;
 
         void validate(Expr * expr = nullptr);

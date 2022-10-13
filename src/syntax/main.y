@@ -57,20 +57,19 @@
     Token * token;
     Action * action;
     Syscall * syscall;
-    std::vector<Syscall *> * syscall_list;
+    std::vector<std::shared_ptr<Syscall>> * syscall_list;
     Rule * rule;
     std::vector<Rule *> * rule_list;
     Stmt * stmt;
-    std::vector<Stmt *> * stmt_list;
+    std::vector<std::shared_ptr<Stmt>> * stmt_list;
     Expr * expr;
-    std::vector<Expr *> * expr_list;
+    std::vector<std::shared_ptr<Expr>> * expr_list;
     std::vector<std::string> * args_list;
 }
 
 %parse-param { ReturnValue * ret }
 
-%destructor { delete $$; } <*>
-%destructor {} <program>
+%destructor { delete $$; } <token>
 
 %token <token>
     // Basics
@@ -134,14 +133,16 @@
 
 %%
 program: stmt_list[stmts] YYEOF {
+    auto stmts = std::shared_ptr<std::vector<std::shared_ptr<Stmt>>>($stmts);
+
     if ($stmts->empty()) {
-        $$ = new Program({ 1, 1 }, { 1, 1 }, $stmts);
+        $$ = new Program(stmts, { 1, 1 }, { 1, 1 });
     }
     else {
-        auto begin = (*$stmts)[0]->begin();
-        auto end = (*$stmts)[$stmts->size() - 1]->end();
+        auto begin = $stmts->at(0)->begin();
+        auto end = $stmts->at($stmts->size() - 1)->end();
 
-        $$ = new Program(begin, end, $stmts);
+        $$ = new Program(stmts, begin, end);
     }
 
     ret->program = $$;
@@ -149,11 +150,11 @@ program: stmt_list[stmts] YYEOF {
 
 stmt_list:
     %empty {
-        $$ = new std::vector<Stmt *>();
+        $$ = new std::vector<std::shared_ptr<Stmt>>();
     }
     | stmt_list[list] stmt[current] {
         $$ = $list;
-        $$->push_back($current);
+        $$->push_back(std::shared_ptr<Stmt>($current));
     }
 
 stmt: policy_decl | function_decl | variable_decl
@@ -161,7 +162,7 @@ stmt: policy_decl | function_decl | variable_decl
 variable_decl: IDENTIFIER[name] ASSIGN expr[value] SEMI {
     $$ = new VariableDecl(
         $name->text(),
-        $value,
+        std::shared_ptr<Expr>($value),
         $name->begin(),
         $SEMI->end()
     );
@@ -219,7 +220,7 @@ policy_decl:
         auto name = $name->text();
         auto body = $body;
         auto action = new Action(
-            Action::Kind::error, begin, end, EPERM
+            Action::Kind::error, EPERM, begin, end
         );
         $$ = new Policy(name, body, action, begin, end);
     }
@@ -238,9 +239,9 @@ token_param_action: ERROR | TRAP | TRACE
 param_action: token_param_action[token] LPAREN INTEGER[param] RPAREN {
     $$ = new Action(
         Action::kind_from_token($token),
+        std::stoi($param->text()),
         $token->begin(),
-        $RPAREN->end(),
-        std::stoi($param->text())
+        $RPAREN->end()
     );
 }
 
@@ -251,32 +252,39 @@ action:
     | token_action[token] {
         $$ = new Action(
             Action::kind_from_token($token),
+            -1,
             $token->begin(),
             $token->end()
         );
     }
 
 rule: action LBRACE rule_body[body] RBRACE {
-    $$ = new Rule($action, $body, $action->begin(), $RBRACE->end());
+    $$ = new Rule(
+        std::shared_ptr<Action>($action),
+        std::shared_ptr<std::vector<std::shared_ptr<Syscall>>>($body),
+        $action->begin(),
+        $RBRACE->end()
+    );
 }
 
 syscall_name: IDENTIFIER | soft_keyword
 
 syscall:
     LBRACK INTEGER[nr] RBRACK {
-        $$ = new Syscall($nr->text(), $LBRACK->begin(), $RBRACK->end());
+        $$ = new Syscall($nr->text(), nullptr, $LBRACK->begin(), $RBRACK->end());
     }
     | LBRACK INTEGER[nr] RBRACK IF expr[condition] {
         $$ = new Syscall(
             $nr->text(),
+            std::shared_ptr<Expr>($condition),
             $LBRACK->begin(),
-            $condition->end(),
-            $condition
+            $condition->end()
         );
     }
     | syscall_name[name] {
         $$ = new Syscall(
             $name->text(),
+            nullptr,
             $name->begin(),
             $name->end()
         );
@@ -284,14 +292,15 @@ syscall:
     | syscall_name[name] IF expr[condition] {
         $$ = new Syscall(
             $name->text(),
+            std::shared_ptr<Expr>($condition),
             $name->begin(),
-            $condition->end(),
-            $condition
+            $condition->end()
         );
     }
     | syscall_name[name] IF error {
         $$ = new Syscall(
             $name->text(),
+            nullptr,
             $name->begin(),
             $IF->end()
         );
@@ -299,23 +308,23 @@ syscall:
 
 syscall_list:
     syscall[current] {
-        $$ = new std::vector<Syscall *>();
-        $$->push_back($current);
+        $$ = new std::vector<std::shared_ptr<Syscall>>();
+        $$->push_back(std::shared_ptr<Syscall>($current));
     }
     | syscall_list[list] COMMA syscall[current] {
         $$ = $list;
-        $$->push_back($current);
+        $$->push_back(std::shared_ptr<Syscall>($current));
     }
     | syscall_list[list] error syscall[current] {
         $$ = $list;
-        $$->push_back($current);
+        $$->push_back(std::shared_ptr<Syscall>($current));
     }
 
 optional_comma: COMMA | %empty
 
 rule_body:
     %empty {
-        $$ = new std::vector<Syscall *>();
+        $$ = new std::vector<std::shared_ptr<Syscall>>();
     }
     | syscall_list optional_comma
 
@@ -464,17 +473,17 @@ constant:
 
 expr_list:
     expr[current] {
-        $$ = new std::vector<Expr *>();
-        $$->push_back($current);
+        $$ = new syntax::ExprList();
+        $$->push_back(std::shared_ptr<Expr>($current));
     }
     | expr_list[list] COMMA expr[current] {
         $$ = $list;
-        $$->push_back($current);
+        $$->push_back(std::shared_ptr<Expr>($current));
     }
 
 function_params:
     %empty {
-        $$ = new std::vector<Expr *>();
+        $$ = new syntax::ExprList();
     }
     | expr_list[params] optional_comma {
         $$ = $params;
@@ -483,10 +492,10 @@ function_params:
 function_call:
     IDENTIFIER[name] LPAREN function_params[params] RPAREN {
         $$ = new FunctionCall(
-            $name->begin(),
-            $RPAREN->end(),
             $name->text(),
-            $params
+            std::shared_ptr<syntax::ExprList>($params),
+            $name->begin(),
+            $RPAREN->end()
         );
     }
 

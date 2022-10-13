@@ -1,5 +1,5 @@
-#ifndef __NODE_HH__
-#define __NODE_HH__
+#ifndef __SYNTAX_NODES__NODE_HH__
+#define __SYNTAX_NODES__NODE_HH__
 
 #include <iostream>
 #include <lexicon/position.hh>
@@ -27,7 +27,11 @@ public:
         function_call,
     };
 
-    Node(Node::Kind kind, Position begin, Position end) : _kind(kind), _begin(begin), _end(end) {}
+    Node(
+        Node::Kind kind,
+        Position begin = Position(0, 0),
+        Position end = Position(0, 0)
+    ) : _kind(kind), _begin(begin), _end(end) {}
 
     inline Position begin() const { return _begin; }
     inline Position end() const { return _end; }
@@ -45,4 +49,4 @@ private:
     Node::Kind _kind;
 };
 
-#endif
+#endif // __SYNTAX_NODES__NODE_HH__

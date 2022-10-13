@@ -1,5 +1,5 @@
-#ifndef __SYSCALL_PARAM_HH__
-#define __SYSCALL_PARAM_HH__
+#ifndef __SYNTAX_NODES_SYSCALL_PARAM_HH__
+#define __SYNTAX_NODES_SYSCALL_PARAM_HH__
 
 #include "_expr.hh"
 
@@ -8,10 +8,11 @@ private:
     std::string _name;
 
 public:
-    SyscallParam(std::string name, Position begin, Position end)
-        : Expr(Node::Kind::syscall_param, begin, end), _name(name) {}
-
-    ~SyscallParam() {}
+    SyscallParam(
+        std::string name,
+        Position begin = Position(0, 0),
+        Position end = Position(0, 0)
+    ) : Expr(Node::Kind::syscall_param, begin, end), _name(name) {}
 
     inline std::string name() const { return _name; }
 
@@ -20,4 +21,4 @@ public:
     uint index();
 };
 
-#endif // __SYSCALL_PARAM_HH__
+#endif // __SYNTAX_NODES_SYSCALL_PARAM_HH__
