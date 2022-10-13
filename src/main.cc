@@ -1,5 +1,4 @@
 #include <iostream>
-#include <syntax/main.hh>
 #include <semantics/main.hh>
 #include <compile.hh>
 #include <utils/cmd_parse.hh>
@@ -9,6 +8,7 @@
 #include <linux/filter.h>
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
+#include <parser.yy.hh>
 
 using std::cout;
 using std::endl;

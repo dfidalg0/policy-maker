@@ -1,6 +1,7 @@
 #include <semantics.hh>
 #include <syntax/nodes/function_decl.hh>
 #include <syntax/nodes/variable_decl.hh>
+#include <parser.yy.hh>
 #include <set>
 
 #include <syscalls.hh>

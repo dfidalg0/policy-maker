@@ -6,24 +6,9 @@
     #include <vector>
     #include <cstdio>
     #include <memory>
+    #include <syntax/nodes.hh>
+    #include <lexicon/token.hh>
     #include <errors.hh>
-
-    typedef class Token Token;
-    typedef class Action Action;
-    typedef class Syscall Syscall;
-    typedef class Rule Rule;
-    typedef class Stmt Stmt;
-    typedef class Policy Policy;
-    typedef class Program Program;
-    typedef class Expr Expr;
-    typedef class BinaryExpr BinaryExpr;
-    typedef class UnaryExpr UnaryExpr;
-    typedef class Constant Constant;
-    typedef class SyscallParam SyscallParam;
-    typedef class Variable Variable;
-    typedef class VariableDecl VariableDecl;
-    typedef class FunctionCall FunctionCall;
-    typedef class FunctionDecl FunctionDecl;
 
     struct ReturnValue {
         Program * program;
@@ -57,13 +42,13 @@
     Token * token;
     Action * action;
     Syscall * syscall;
-    std::vector<std::shared_ptr<Syscall>> * syscall_list;
+    syntax::SyscallsList * syscall_list;
     Rule * rule;
-    std::vector<std::shared_ptr<Rule>> * rule_list;
+    syntax::RulesList * rule_list;
     Stmt * stmt;
     std::vector<std::shared_ptr<Stmt>> * stmt_list;
     Expr * expr;
-    std::vector<std::shared_ptr<Expr>> * expr_list;
+    syntax::ExprList * expr_list;
     std::vector<std::string> * args_list;
 }
 

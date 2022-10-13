@@ -22,8 +22,9 @@ target/syscalls.hh target/syscalls/$(ARCH).hh: scripts/generate_syscalls.py scri
 target/lexer.yy.cc: src/lexicon/main.l | target
 	flex -o target/lexer.yy.cc src/lexicon/main.l
 
-target/parser.yy.cc target/parser.yy.hh: src/syntax/main.y | target
-	bison -Wno-other -d src/syntax/main.y -o target/parser.yy.cc
+target/parser.yy.cc target/parser.yy.hh: src/syntax/main.y scripts/extract_token_types.py | target
+	bison -Wno-other -d src/syntax/main.y -o target/parser.yy.cc && \
+	python3 scripts/extract_token_types.py
 
 bin:
 	mkdir bin

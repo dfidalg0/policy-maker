@@ -3,7 +3,7 @@
 #include <semantics.hh>
 #include <algorithm>
 #include <memory>
-#include <semantics/operations.h>
+#include <semantics/operations.hh>
 
 using namespace semantics;
 

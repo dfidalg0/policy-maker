@@ -1,4 +1,4 @@
-#include <semantics/operations.h>
+#include <semantics/operations.hh>
 #include <stdexcept>
 
 // int-int operators

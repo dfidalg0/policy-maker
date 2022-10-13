@@ -4,6 +4,7 @@
 #include <queue>
 #include <utility>
 #include <stddef.h>
+#include <sstream>
 
 
 // Tipos auxiliares

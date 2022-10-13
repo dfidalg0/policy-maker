@@ -2,7 +2,7 @@
 #define __TOKEN_HH__
 
 #include <lexicon/position.hh>
-#include <parser.yy.hh>
+#include <token_types.hh>
 #include <string>
 
 class Token {
