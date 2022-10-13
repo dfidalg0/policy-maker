@@ -52,13 +52,13 @@ static void validate_expr(Scope * scope, Expr * expr) {
         }
         case kind::unary_expr: {
             auto unary = (UnaryExpr*)expr;
-            validate_expr(scope, unary->operand());
+            validate_expr(scope, unary->operand().get());
             break;
         }
         case kind::binary_expr: {
             auto binary = (BinaryExpr*)expr;
-            validate_expr(scope, binary->left());
-            validate_expr(scope, binary->right());
+            validate_expr(scope, binary->left().get());
+            validate_expr(scope, binary->right().get());
             break;
         }
         case kind::syscall_param: {
@@ -70,12 +70,12 @@ static void validate_expr(Scope * scope, Expr * expr) {
 }
 
 void Function::validate(Expr * expr) {
-    if (expr == nullptr) expr = _body;
+    if (expr == nullptr) expr = _body.get();
 
     auto local_scope = new Scope(_decl_scope);
 
     for (auto arg : _args) {
-        auto var = new Variable(arg);
+        auto var = std::make_shared<Variable>(arg);
         local_scope->add(var);
     }
 
@@ -90,7 +90,7 @@ void Function::validate(Expr * expr) {
     delete local_scope;
 };
 
-Expr * Function::call(std::vector<Expr*> args) {
+std::shared_ptr<Expr> Function::call(std::vector<std::shared_ptr<Expr>> args) {
     auto local_scope = new Scope(_decl_scope);
 
     if (args.size() < _args.size()) {
@@ -101,7 +101,7 @@ Expr * Function::call(std::vector<Expr*> args) {
         auto arg = _args[i];
         auto value = args[i];
 
-        auto var = new Variable(arg, value);
+        auto var = std::make_shared<Variable>(arg, value);
         local_scope->add(var);
     }
 

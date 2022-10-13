@@ -59,7 +59,7 @@
     Syscall * syscall;
     std::vector<std::shared_ptr<Syscall>> * syscall_list;
     Rule * rule;
-    std::vector<Rule *> * rule_list;
+    std::vector<std::shared_ptr<Rule>> * rule_list;
     Stmt * stmt;
     std::vector<std::shared_ptr<Stmt>> * stmt_list;
     Expr * expr;
@@ -171,20 +171,20 @@ variable_decl: IDENTIFIER[name] ASSIGN expr[value] SEMI {
 function_decl:
     FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] SEMI {
         $$ = new FunctionDecl(
-            $FUNCTION->begin(),
-            $SEMI->end(),
             $name->text(),
-            $args,
-            $body
+            std::shared_ptr<std::vector<std::string>>($args),
+            std::shared_ptr<Expr>($body),
+            $FUNCTION->begin(),
+            $SEMI->end()
         );
     }
     | FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] error {
         $$ = new FunctionDecl(
-            $FUNCTION->begin(),
-            $body->end(),
             $name->text(),
-            $args,
-            $body
+            std::shared_ptr<std::vector<std::string>>($args),
+            std::shared_ptr<Expr>($body),
+            $FUNCTION->begin(),
+            $body->end()
         );
     }
 
@@ -209,17 +209,17 @@ policy_decl:
     POLICY IDENTIFIER[name] action POLICY_DECL_OR LBRACE policy_body[body] RBRACE {
         auto begin = $POLICY->begin();
         auto end = $RBRACE->end();
-        auto body = $body;
+        auto body = std::shared_ptr<syntax::RulesList>($body);
         auto name = $name->text();
-        auto action = $action;
+        auto action = std::shared_ptr<Action>($action);
         $$ = new Policy(name, body, action, begin, end);
     }
     | POLICY IDENTIFIER[name] LBRACE policy_body[body] RBRACE {
         auto begin = $POLICY->begin();
         auto end = $RBRACE->end();
         auto name = $name->text();
-        auto body = $body;
-        auto action = new Action(
+        auto body = std::shared_ptr<syntax::RulesList>($body);
+        auto action = std::make_shared<Action>(
             Action::Kind::error, EPERM, begin, end
         );
         $$ = new Policy(name, body, action, begin, end);
@@ -227,11 +227,11 @@ policy_decl:
 
 policy_body:
     %empty {
-        $$ = new std::vector<Rule *>();
+        $$ = new std::vector<std::shared_ptr<Rule>>();
     }
     | policy_body[body] rule {
         $$ = $body;
-        $1->push_back($rule);
+        $1->push_back(std::shared_ptr<Rule>($rule));
     }
 
 token_param_action: ERROR | TRAP | TRACE
@@ -406,7 +406,7 @@ unary_op: NOT | LOGICAL_NOT | ADD | SUB
 unary_expr:
     unary_op[op] base_expr[expr] {
         $$ = new UnaryExpr(
-            $expr,
+            std::shared_ptr<Expr>($expr),
             UnaryExpr::kind_from_token($op),
             $op->begin(),
             $expr->end()
@@ -540,8 +540,8 @@ std::unique_ptr<Program> parse(std::string filename) {
 
 BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op) {
     return new BinaryExpr(
-        left,
-        right,
+        std::shared_ptr<Expr>(left),
+        std::shared_ptr<Expr>(right),
         BinaryExpr::kind_from_token(op),
         left->begin(),
         right->end()

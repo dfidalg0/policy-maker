@@ -3,18 +3,18 @@
 
 #include <string>
 #include <syntax/nodes/_expr.hh>
+#include <memory>
 
 #include "_symbol.hh"
 
 namespace semantics {
     class Variable : public Symbol {
     public:
-        Variable(std::string name, Expr * value = nullptr);
-        virtual ~Variable(){};
+        Variable(std::string name, std::shared_ptr<Expr> value = nullptr);
 
-        inline Expr * value() const { return _value; };
+        inline std::shared_ptr<Expr> value() const { return _value; };
     private:
-        Expr * _value;
+        std::shared_ptr<Expr> _value;
     };
 };
 

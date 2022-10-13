@@ -4,6 +4,7 @@
 #include <exception>
 #include <lexicon/token.hh>
 #include <string>
+#include <memory>
 
 #include "_expr.hh"
 
@@ -46,15 +47,20 @@ public:
         std::string _message;
     };
 private:
-    Expr * _left;
-    Expr * _right;
+    std::shared_ptr<Expr> _left;
+    std::shared_ptr<Expr> _right;
     OpKind _op;
 public:
-    BinaryExpr(Expr * left, Expr * right, OpKind op, Position begin, Position end)
-        : Expr(Node::Kind::binary_expr, begin, end), _left(left), _right(right), _op(op) {}
+    BinaryExpr(
+        std::shared_ptr<Expr> left,
+        std::shared_ptr<Expr> right,
+        OpKind op,
+        Position begin = Position(0, 0),
+        Position end = Position(0, 0)
+    ) : Expr(Node::Kind::binary_expr, begin, end), _left(left), _right(right), _op(op) {}
 
-    inline Expr * left() const { return _left; }
-    inline Expr * right() const { return _right; }
+    inline std::shared_ptr<Expr> left() const { return _left; }
+    inline std::shared_ptr<Expr> right() const { return _right; }
     inline OpKind op() const { return _op; }
 
     void print(uint level = 0) override;

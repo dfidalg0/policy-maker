@@ -9,13 +9,13 @@
 // Tipos auxiliares
 struct SyscallRulesWithNumber {
     uint nr;
-    SyscallRules *rules;
+    std::shared_ptr<SyscallRules> rules;
 };
 
 // Cabeçalhos auxiliares
-AnalysisResultPolicy * get_policy(AnalysisResult * ar, std::string & entry);
+std::shared_ptr<AnalysisResultPolicy> get_policy(AnalysisResult * ar, std::string & entry);
 sock_filter get_seccomp_ret(Action * action);
-std::vector<SyscallRulesWithNumber> get_resolution_order(PolicyRules *rules);
+std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<PolicyRules> rules);
 
 // Declaração da função de compilação
 CompileResult compile(AnalysisResult *ar, std::string entry) {
@@ -40,7 +40,7 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
 
     using kind = Expr::Kind;
 
-    auto default_action = get_seccomp_ret(policy->default_action());
+    auto default_action = get_seccomp_ret(policy->default_action().get());
 
     // Vamos construir o filtro de trás pra frente para depois revertê-lo
     _filter->push_back(default_action);
@@ -437,7 +437,7 @@ CompileResult::operator sock_fprog() {
     };
 }
 
-AnalysisResultPolicy *get_policy(AnalysisResult *ar, std::string &entry) {
+std::shared_ptr<AnalysisResultPolicy> get_policy(AnalysisResult *ar, std::string &entry) {
     auto it = ar->policies()->find(entry);
 
     if (it == ar->policies()->end()) {
@@ -472,7 +472,7 @@ sock_filter get_seccomp_ret(Action *action) {
     }
 }
 
-std::vector<SyscallRulesWithNumber> get_resolution_order(PolicyRules *rules) {
+std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<PolicyRules> rules) {
     static auto log = [](int x) {
         int ret = 0;
 

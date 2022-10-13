@@ -13,7 +13,7 @@ namespace semantics {
     class Function : public Symbol {
     public:
         Function(FunctionDecl * decl, std::shared_ptr<Scope> scope);
-        Expr * call(std::vector<std::shared_ptr<Expr>> args);
+        std::shared_ptr<Expr> call(std::vector<std::shared_ptr<Expr>> args);
         virtual ~Function(){};
 
         inline const std::vector<std::string> &args() const { return _args; }

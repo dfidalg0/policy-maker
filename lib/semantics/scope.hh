@@ -13,19 +13,19 @@ class Scope {
 public:
     Scope(std::shared_ptr<Scope> parent = nullptr) : _parent(parent){};
 
-    Scope add(Symbol* symbol);
-    Symbol * find(std::string name);
+    Scope& add(std::shared_ptr<Symbol> symbol);
+    std::shared_ptr<Symbol> find(std::string name);
 
-    Expr * evaluate(Expr * expr);
-    inline const std::unordered_map<std::string, Symbol *> &symbols() const {
+    std::shared_ptr<Expr> evaluate(std::shared_ptr<Expr> expr);
+    inline const std::unordered_map<std::string, std::shared_ptr<Symbol>> &symbols() const {
         return _symbols;
     }
 private:
     std::shared_ptr<Scope> _parent;
-    std::unordered_map<std::string, Symbol*> _symbols;
+    std::unordered_map<std::string, std::shared_ptr<Symbol>> _symbols;
 
-    std::unique_ptr<Expr> simplify(UnaryExpr *);
-    std::unique_ptr<Expr> simplify(BinaryExpr *);
+    std::shared_ptr<Expr> simplify(std::shared_ptr<UnaryExpr> unary);
+    std::shared_ptr<Expr> simplify(std::shared_ptr<BinaryExpr> binary);
 };
 
 #endif // __SEMANTICS_SCOPE_HH__

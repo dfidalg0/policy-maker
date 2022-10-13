@@ -29,7 +29,7 @@ bin:
 	mkdir bin
 
 bin/compiler: lexer parser syscalls $(INPUTS) $(HEADERS) | bin
-	g++ -lfl -I lib -I target $(INPUTS) target/*.cc -o bin/compiler
+	g++ -lfl -I lib -I target --std=c++17 $(INPUTS) target/*.cc -o bin/compiler
 
 clean:
 	rm -rf bin target

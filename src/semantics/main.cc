@@ -51,7 +51,7 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
         switch (stmt->kind()) {
             case kind::function_decl: {
                 auto func_decl = std::static_pointer_cast<FunctionDecl>(stmt);
-                auto func = new semantics::Function(func_decl.get(), global_scope);
+                auto func = std::make_shared<semantics::Function>(func_decl.get(), global_scope);
                 global_scope->add(func);
                 break;
             }
@@ -59,13 +59,13 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
                 auto var_decl = std::static_pointer_cast<VariableDecl>(stmt);
 
                 auto name = var_decl->name();
-                auto value = global_scope->evaluate(var_decl->value().get());
+                auto value = global_scope->evaluate(var_decl->value());
 
                 if (value->kind() != kind::constant) {
                     throw std::runtime_error("Global variables must be constant");
                 }
 
-                auto var = new semantics::Variable(name, value);
+                auto var = std::make_shared<semantics::Variable>(name, value);
 
                 global_scope->add(var);
                 break;
@@ -73,7 +73,7 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
         }
     }
 
-    auto policies = new Policies();
+    auto policies = std::make_shared<Policies>();
 
     for (auto stmt : prog->stmts()) {
         if (stmt->kind() != kind::policy) continue;
@@ -82,12 +82,13 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
         auto name = policy_stmt->name();
         auto rules = policy_stmt->rules();
 
-        auto policy_rules = new PolicyRules();
+        auto policy_rules = std::make_shared<PolicyRules>();
 
-        auto policy = new AnalysisResultPolicy(
+        auto policy = std::make_shared<AnalysisResultPolicy>(
             policy_rules,
             policy_stmt->default_action()
         );
+
         policies->insert({name, policy});
 
         for (auto &rule : rules) {
@@ -101,12 +102,11 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
                 auto & overloads = entry.overloads;
 
                 auto syscall_rules = ([&policy_rules, &nr]() {
-                    SyscallRules *syscall_rules;
+                    auto syscall_rules = std::make_shared<SyscallRules>();
 
                     auto it = policy_rules->find(nr);
 
                     if (it == policy_rules->end()) {
-                        syscall_rules = new SyscallRules();
                         policy_rules->insert({nr, syscall_rules});
                     } else {
                         syscall_rules = it->second;
@@ -121,16 +121,16 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
 
                 for (auto &[index, param]: syscall_params) {
                     scope->add(
-                        new semantics::SyscallParam(
+                        std::make_shared<semantics::SyscallParam>(
                             ":" + param.name, index, param.pointer
                         )
                     );
                 }
 
-                auto evaluated_condition = scope->evaluate(condition.get());
+                std::shared_ptr<Expr> evaluated_condition = scope->evaluate(condition);
 
                 syscall_rules->push_back({
-                    std::shared_ptr<Expr>(evaluated_condition),
+                    evaluated_condition,
                     rule->action()
                 });
 

@@ -36,8 +36,7 @@ public:
         int param = -1,
         Position begin = Position(0, 0),
         Position end = Position(0, 0)
-    )
-        : Node(Node::Kind::action, begin, end), _action_kind(kind), _param(param) {}
+    ) : Node(Node::Kind::action, begin, end), _action_kind(kind), _param(param) {}
 
     inline Kind action_kind() const { return _action_kind; }
     inline int param() const { return _param; }

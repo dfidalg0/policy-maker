@@ -26,7 +26,7 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
         case kind::unary_expr: {
             auto unary = (UnaryExpr *) expr;
 
-            auto operand = compile_expr(unary->operand());
+            auto operand = compile_expr(unary->operand().get());
 
             filter->insert(filter->end(), operand->begin(), operand->end());
 
@@ -71,12 +71,12 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
             using Op = BinaryExpr::OpKind;
 
-            auto * Lconst = L->kind() == kind::constant
-                ? (Constant *) L
+            auto Lconst = L->kind() == kind::constant
+                ? std::static_pointer_cast<Constant>(L)
                 : nullptr;
 
-            auto * Rconst = R->kind() == kind::constant
-                ? (Constant *) R
+            auto Rconst = R->kind() == kind::constant
+                ? std::static_pointer_cast<Constant>(R)
                 : nullptr;
 
             // Curto circuito para o operador lógico OR
@@ -96,17 +96,17 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
                 // L é uma constante falsa
                 if (Lconst) {
-                    return compile_expr(R);
+                    return compile_expr(R.get());
                 }
 
                 // R é uma constante falsa
                 if (Rconst) {
-                    return compile_expr(L);
+                    return compile_expr(L.get());
                 }
 
-                auto Rfilter = compile_expr(R);
+                auto Rfilter = compile_expr(R.get());
 
-                auto Lfilter = compile_expr(L);
+                auto Lfilter = compile_expr(L.get());
                 filter->insert(filter->end(), Lfilter->begin(), Lfilter->end());
 
                 __u8 rsize = Rfilter->size();
@@ -137,17 +137,17 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
                 // L é uma constante verdadeira
                 if (Lconst) {
-                    return compile_expr(R);
+                    return compile_expr(R.get());
                 }
 
                 // R é uma constante verdadeira
                 if (Rconst) {
-                    return compile_expr(L);
+                    return compile_expr(L.get());
                 }
 
-                auto Rfilter = compile_expr(R);
+                auto Rfilter = compile_expr(R.get());
 
-                auto Lfilter = compile_expr(L);
+                auto Lfilter = compile_expr(L.get());
                 filter->insert(filter->end(), Lfilter->begin(), Lfilter->end());
 
                 __u8 rsize = Rfilter->size();
@@ -186,7 +186,7 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
                     default: {
                         int left_value = *Lconst;
 
-                        auto r_code = compile_expr(R);
+                        auto r_code = compile_expr(R.get());
                         filter->insert(filter->end(), r_code->begin(), r_code->end());
 
                         // Carregamos o acumulador no registro de índice
@@ -205,7 +205,7 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
             if (Rconst) {
                 int right_value = *Rconst;
 
-                auto l_code = compile_expr(L);
+                auto l_code = compile_expr(L.get());
                 filter->insert(filter->end(), l_code->begin(), l_code->end());
 
                 source_reg = BPF_K;
@@ -214,7 +214,7 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
             if (!Lconst && !Rconst) {
                 // Carregamos a expressão direita no acumulador
-                auto r_code = compile_expr(R);
+                auto r_code = compile_expr(R.get());
                 filter->insert(filter->end(), r_code->begin(), r_code->end());
 
                 // Obtemos um espaço livre na memória
@@ -227,7 +227,7 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
                 );
 
                 // Carregamos a expressão esquerda no acumulador
-                auto l_code = compile_expr(L);
+                auto l_code = compile_expr(L.get());
                 filter->insert(filter->end(), l_code->begin(), l_code->end());
 
                 // Carregamos o valor da memória no registro de índice

@@ -128,7 +128,7 @@ static std::unique_ptr<Constant> operate(Constant *a, BinaryExpr::OpKind op, Con
     }
 }
 
-Scope Scope::add(Symbol* symbol) {
+Scope& Scope::add(std::shared_ptr<Symbol> symbol) {
     auto name = symbol->name();
 
     if (_symbols.find(name) != _symbols.end()) {
@@ -139,7 +139,7 @@ Scope Scope::add(Symbol* symbol) {
     return *this;
 }
 
-Symbol* Scope::find(std::string name) {
+std::shared_ptr<Symbol> Scope::find(std::string name) {
     auto it = _symbols.find(name);
 
     if (it != _symbols.end())
@@ -150,12 +150,12 @@ Symbol* Scope::find(std::string name) {
     return nullptr;
 }
 
-Expr * Scope::evaluate(Expr * expr) {
+std::shared_ptr<Expr> Scope::evaluate(std::shared_ptr<Expr> expr) {
     if (!expr) return nullptr;
 
     switch (expr->kind()) {
         case Expr::Kind::function_call: {
-            auto call = (FunctionCall*) expr;
+            auto call = std::static_pointer_cast<FunctionCall>(expr);
             auto name = call->name();
             auto symbol = find(name);
 
@@ -167,24 +167,24 @@ Expr * Scope::evaluate(Expr * expr) {
                 throw std::runtime_error("Not a function: " + name);
             }
 
-            auto function = (semantics::Function *) symbol;
+            auto function = std::static_pointer_cast<semantics::Function>(symbol);
             auto args = call->args();
 
-            auto evaluated_args = std::vector<Expr *>(args.size());
+            auto evaluated_args = std::vector<std::shared_ptr<Expr>>(args.size());
 
             std::transform(
                 args.begin(),
                 args.end(),
                 evaluated_args.begin(),
                 [this](std::shared_ptr<Expr> expr) {
-                    return this->evaluate(expr.get());
+                    return this->evaluate(expr);
                 }
             );
 
             return function->call(evaluated_args);
         }
         case Expr::Kind::variable: {
-            auto variable = (::Variable*)expr;
+            auto variable = std::static_pointer_cast<::Variable>(expr);
             auto name = variable->name();
             auto symbol = find(name);
 
@@ -196,11 +196,11 @@ Expr * Scope::evaluate(Expr * expr) {
                 throw std::runtime_error("Not a variable: " + name);
             }
 
-            auto var = (semantics::Variable *) symbol;
+            auto var = std::static_pointer_cast<semantics::Variable>(symbol);
             return var->value();
         }
         case Expr::Kind::syscall_param: {
-            auto param = (::SyscallParam *) expr;
+            auto param = std::static_pointer_cast<::SyscallParam>(expr);
 
             try {
                 std::stoi(param->name());
@@ -214,11 +214,11 @@ Expr * Scope::evaluate(Expr * expr) {
                     throw std::runtime_error("Syscall parameter not defined: " + name);
                 }
 
-                auto sys_param = (semantics::SyscallParam *) symbol;
+                auto sys_param = std::static_pointer_cast<semantics::SyscallParam>(symbol);
 
                 auto index = sys_param->index();
 
-                return new ::SyscallParam(
+                return std::make_shared<::SyscallParam>(
                     std::to_string(index),
                     param->begin(),
                     param->end()
@@ -226,14 +226,14 @@ Expr * Scope::evaluate(Expr * expr) {
             }
         }
         case Expr::Kind::unary_expr: {
-            auto unary = (UnaryExpr*) expr;
+            auto unary = std::static_pointer_cast<UnaryExpr>(expr);
 
-            return simplify(unary).release();
+            return simplify(unary);
         }
         case Expr::Kind::binary_expr: {
-            auto binary = (BinaryExpr*) expr;
+            auto binary = std::static_pointer_cast<BinaryExpr>(expr);
 
-            return simplify(binary).release();
+            return simplify(binary);
         }
         default: {
             return expr;
@@ -241,7 +241,7 @@ Expr * Scope::evaluate(Expr * expr) {
     }
 }
 
-std::unique_ptr<Expr> Scope::simplify(UnaryExpr * unary) {
+std::shared_ptr<Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) {
     using type = Constant::Type;
     using opKind = UnaryExpr::OpKind;
 
@@ -259,7 +259,7 @@ std::unique_ptr<Expr> Scope::simplify(UnaryExpr * unary) {
         );
     }
 
-    auto constant = (Constant *) operand;
+    auto constant = std::static_pointer_cast<Constant>(operand);
 
     switch (constant->type()) {
         case type::integer: {
@@ -323,7 +323,7 @@ std::unique_ptr<Expr> Scope::simplify(UnaryExpr * unary) {
     }
 }
 
-std::unique_ptr<Expr> Scope::simplify(BinaryExpr * binary) {
+std::shared_ptr<Expr> Scope::simplify(std::shared_ptr<BinaryExpr> binary) {
     using type = Constant::Type;
     using kind = Expr::Kind;
 
@@ -349,8 +349,8 @@ std::unique_ptr<Expr> Scope::simplify(BinaryExpr * binary) {
         );
     }
 
-    auto cl = (Constant *) left;
-    auto cr = (Constant *) right;
+    auto cl = std::static_pointer_cast<Constant>(left);
+    auto cr = std::static_pointer_cast<Constant>(right);
 
     if (cl->type() == type::null || cr->type() == type::null) {
         throw std::runtime_error("Invalid operation");
@@ -361,21 +361,21 @@ std::unique_ptr<Expr> Scope::simplify(BinaryExpr * binary) {
             switch (cr->type()) {
                 case type::integer:
                 case type::boolean:
-                    return operate<int, int>(cl, op, cr);
+                    return operate<int, int>(cl.get(), op, cr.get());
                 default:
-                    return operate<std::string, std::string>(cl, op, cr);
+                    return operate<std::string, std::string>(cl.get(), op, cr.get());
             }
         case type::boolean:
             switch (cr->type()) {
                 case type::integer:
                 case type::boolean:
-                    return operate<bool, bool>(cl, op, cr);
+                    return operate<bool, bool>(cl.get(), op, cr.get());
                 default:
-                    return operate<std::string, std::string>(cl, op, cr);
+                    return operate<std::string, std::string>(cl.get(), op, cr.get());
             }
         // type::string
         default:
-            return operate<std::string, std::string>(cl, op, cr);
+            return operate<std::string, std::string>(cl.get(), op, cr.get());
     }
 
     return std::make_unique<BinaryExpr>(left, right, op, begin, end);

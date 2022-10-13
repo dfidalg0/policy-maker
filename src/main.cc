@@ -82,12 +82,12 @@ int main(int argc, char const * argv[]) {
                 cout << "  - " << name;
 
                 if (symbol->kind() == Symbol::Kind::variable) {
-                    auto var = (semantics::Variable *) symbol;
+                    auto var = std::static_pointer_cast<semantics::Variable>(symbol);
                     cout << ": Variable" << endl;
                     var->value()->print(4);
                 }
                 else {
-                    auto fn = (semantics::Function *) symbol;
+                    auto fn = std::static_pointer_cast<semantics::Function>(symbol);
                     cout << ": Function" << endl;
                     cout << "    - Args: " << endl;
                     for (auto arg : fn->args()) {

@@ -1,9 +1,10 @@
-#ifndef __UNARY_EXPR_HH__
-#define __UNARY_EXPR_HH__
+#ifndef __SYNTAX_NODES_UNARY_EXPR_HH__
+#define __SYNTAX_NODES_UNARY_EXPR_HH__
 
 #include <exception>
 #include <lexicon/token.hh>
 #include <string>
+#include <memory>
 
 #include "_expr.hh"
 
@@ -32,16 +33,20 @@ public:
     };
 
 private:
-    Expr * _operand;
+    std::shared_ptr<Expr> _operand;
     OpKind _op;
 public:
-    UnaryExpr(Expr * operand, OpKind op, Position begin, Position end)
-        : Expr(Node::Kind::unary_expr, begin, end), _operand(operand), _op(op) {}
+    UnaryExpr(
+        std::shared_ptr<Expr> operand,
+        OpKind op,
+        Position begin = Position(0, 0),
+        Position end = Position(0, 0)
+    ) : Expr(Node::Kind::unary_expr, begin, end), _operand(operand), _op(op) {}
 
-    inline Expr * operand() const { return _operand; }
+    inline std::shared_ptr<Expr> operand() const { return _operand; }
     inline OpKind op() const { return _op; }
 
     void print(uint level = 0) override;
 };
 
-#endif // __UNARY_EXPR_HH__
+#endif // __SYNTAX_NODES_UNARY_EXPR_HH__
