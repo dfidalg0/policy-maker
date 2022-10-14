@@ -1,5 +1,5 @@
-#ifndef __TOKEN_HH__
-#define __TOKEN_HH__
+#ifndef __LEXICON_TOKEN_HH__
+#define __LEXICON_TOKEN_HH__
 
 #include <lexicon/position.hh>
 #include <token_types.hh>
@@ -20,4 +20,4 @@ public:
     inline yytokentype type() const { return _type; }
 };
 
-#endif // __TOKEN_HH__
+#endif // __LEXICON_TOKEN_HH__

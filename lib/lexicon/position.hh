@@ -1,5 +1,5 @@
-#ifndef __POSITION_HH__
-#define __POSITION_HH__
+#ifndef __LEXICON_POSITION_HH__
+#define __LEXICON_POSITION_HH__
 
 class Position {
 private:
@@ -11,4 +11,4 @@ public:
     inline unsigned col() const { return _col; }
 };
 
-#endif // __POSITION_HH__
+#endif // __LEXICON_POSITION_HH__

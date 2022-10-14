@@ -2,35 +2,20 @@
 #include <iostream>
 #include <parser.yy.hh>
 #include <lexicon/token.hh>
+#include <lexicon/context.hh>
 
-typedef yytokentype tt;
+using tt = yytokentype;
 
-static int line_start = 1, col_start = 1, line_end = 1, col_end = 1;
+#define SET_TOKEN_DECL static void set_token_info(void * scanner, YYSTYPE * yylval, lexicon::Context* ctx, tt type)
 
-inline static void set_token_info(tt type) {
-    line_end = line_start;
-    col_end = col_start + yyleng;
-
-    yylval.token = new Token(
-        type,
-        Position(line_start, col_start),
-        Position(line_end,   col_end  ),
-        std::string(yytext)
-    );
-
-    if (type == tt::YYEOF) {
-        line_start = col_start = line_end = col_end = 1;
-        return;
-    }
-
-    line_start = line_end;
-    col_start = col_end;
-}
+SET_TOKEN_DECL;
 
 #define MAKE_TOKEN($type) \
-    set_token_info(tt::$type); \
+    set_token_info(yyscanner, yylval, ctx, tt::$type); \
     return tt::$type;
 %}
+
+%option reentrant
 
 id            [a-zA-Z_][a-zA-Z0-9_]*
 sc_param      :([0-9]+|[a-z_]+)
@@ -47,12 +32,12 @@ str           "([^"]|\\")*"|'([^']|\\')*'
 
 %%
 \/\/        { BEGIN(COMM); }
-<COMM>\n    { BEGIN(INITIAL); ++line_start; col_start = 1; }
-<COMM>.     { ++col_start; }
+<COMM>\n    { BEGIN(INITIAL); ++ctx->line_start; ctx->col_start = 1; }
+<COMM>.     { ++ctx->col_start; }
 \/\*        { BEGIN(M_COM); }
-<M_COM>\*\/ { BEGIN(INITIAL); col_start += 2; }
-<M_COM>\n   { ++line_start; col_start = 1; }
-<M_COM>.    { ++col_start; }
+<M_COM>\*\/ { BEGIN(INITIAL); ctx->col_start += 2; }
+<M_COM>\n   { ++ctx->line_start; ctx->col_start = 1; }
+<M_COM>.    { ++ctx->col_start; }
 
 policy      { MAKE_TOKEN(POLICY); }
 terminate   { MAKE_TOKEN(TERMINATE); }
@@ -109,10 +94,33 @@ or          { MAKE_TOKEN(POLICY_DECL_OR); }
 !           { MAKE_TOKEN(LOGICAL_NOT); }
 \;          { MAKE_TOKEN(SEMI); }
 
-\n          { line_start++; col_start = 1; }
-[[:space:]] { col_start++; }
+\n          { ctx->line_start++; ctx->col_start = 1; }
+[[:space:]] { ctx->col_start++; }
 
 <<EOF>>     { MAKE_TOKEN(YYEOF); }
 
 .           { MAKE_TOKEN(YYUNDEF); }
 %%
+
+SET_TOKEN_DECL {
+    auto leng = yyget_leng(scanner);
+    auto text = yyget_text(scanner);
+
+    ctx->line_end = ctx->line_start;
+    ctx->col_end = ctx->col_start + leng;
+
+    yylval->token = new Token(
+        type,
+        Position(ctx->line_start, ctx->col_start),
+        Position(ctx->line_end,   ctx->col_end  ),
+        std::string(text)
+    );
+
+    if (type == tt::YYEOF) {
+        ctx->line_start = ctx->col_start = ctx->line_end = ctx->col_end = 1;
+        return;
+    }
+
+    ctx->line_start = ctx->line_end;
+    ctx->col_start = ctx->col_end;
+}

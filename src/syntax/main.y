@@ -8,6 +8,7 @@
     #include <memory>
     #include <syntax/nodes.hh>
     #include <lexicon/token.hh>
+    #include <lexicon/context.hh>
     #include <errors.hh>
 
     struct ReturnValue {
@@ -25,11 +26,16 @@
 
     inline syntax::BinaryExpr * bin_expr(syntax::Expr * left, syntax::Expr * right, Token * op);
 
-    void yyerror(ReturnValue *, char const *);
+    void yyerror(void *, lexicon::Context*, ReturnValue *, char const *);
+}
 
-    extern "C" int yylex();
-    extern char* yytext;
-    extern FILE * yyin;
+%code provides {
+    #define YY_DECL int yylex(YYSTYPE * yylval, void * yyscanner, lexicon::Context * ctx)
+
+    extern "C" YY_DECL;
+    extern "C" int yylex_init(void **);
+    extern "C" int yylex_destroy(void *);
+    extern "C" void yyset_in(FILE *, void *);
 }
 
 %define parse.error detailed
@@ -49,7 +55,13 @@
     std::vector<std::string> * args_list;
 }
 
+%define api.pure full
+
+%parse-param { void * yyscanner }
+%parse-param { lexicon::Context * ctx }
 %parse-param { ReturnValue * ret }
+%lex-param { void * yyscanner }
+%lex-param { lexicon::Context * ctx }
 
 %destructor { delete $$; } <token>
 
@@ -488,7 +500,7 @@ soft_keyword: token_keyword {
     delete $1;
 }
 %%
-void yyerror(ReturnValue * ret, char const * err) {
+void yyerror(void *, lexicon::Context *, ReturnValue * ret, char const * err) {
     ret->success = false;
 
     std::cerr << err << std::endl;
@@ -501,15 +513,21 @@ std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {
         throw FileNotFoundError(filename);
     }
 
-    yyin = file;
-
     auto ret = new ReturnValue();
+    auto ctx = new lexicon::Context();
 
-    yyparse(ret);
+    void * yyscanner;
+
+    yylex_init(&yyscanner);
+    yyset_in(file, yyscanner);
+    yyparse(yyscanner, ctx, ret);
+    yylex_destroy(yyscanner);
+
     auto program = ret->program;
     auto success = ret->success;
 
     delete ret;
+    delete ctx;
 
     if (!success) {
         delete program;

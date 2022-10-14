@@ -29,21 +29,21 @@ namespace semantics {
         std::shared_ptr<PolicyRules> _rules;
     };
 
-    typedef std::unordered_map<std::string, std::shared_ptr<semantics::Policy>> Policies;
+    typedef std::unordered_map<std::string, std::shared_ptr<Policy>> Policies;
 
     class AnalysisResult {
     public:
         AnalysisResult(
             std::shared_ptr<Policies> policies,
-            std::shared_ptr<semantics::Scope> scope
+            std::shared_ptr<Scope> scope
         ) : _policies(policies), _scope(scope) {}
 
         inline std::shared_ptr<Policies> policies() { return _policies; }
 
-        inline std::shared_ptr<semantics::Scope> scope() { return _scope; }
+        inline std::shared_ptr<Scope> scope() { return _scope; }
     private:
         std::shared_ptr<Policies> _policies;
-        std::shared_ptr<semantics::Scope> _scope;
+        std::shared_ptr<Scope> _scope;
     };
 
     std::unique_ptr<AnalysisResult> analyze(std::string filename);
