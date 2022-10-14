@@ -1,5 +1,7 @@
 #include <syntax/nodes/constant.hh>
 
+using namespace syntax;
+
 void Constant::print(uint level) {
     std::cout << indent(level) << "> Constant: \n";
     std::cout << indent(level + 2) << "- Type: " << type_to_string(_type) << std::endl;

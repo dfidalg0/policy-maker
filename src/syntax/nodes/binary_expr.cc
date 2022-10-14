@@ -1,5 +1,7 @@
 #include <syntax/nodes/binary_expr.hh>
 
+using namespace syntax;
+
 void BinaryExpr::print(uint level) {
     std::cout << indent(level) << "> Binary Expression" << std::endl;
     std::cout << indent(level + 2) << "- Operator: " << kind_to_string(_op) << std::endl;

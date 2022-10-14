@@ -3,16 +3,18 @@
 
 #include "_node.hh"
 
-class Expr : public Node {
-public:
-    Expr(
-        Node::Kind kind,
-        Position begin = Position(0, 0),
-        Position end = Position(0, 0)
-    ) : Node(kind, begin, end){};
-    virtual ~Expr(){};
+namespace syntax {
+    class Expr : public Node {
+    public:
+        Expr(
+            Node::Kind kind,
+            Position begin = Position(0, 0),
+            Position end = Position(0, 0)
+        ) : Node(kind, begin, end){};
+        virtual ~Expr(){};
 
-    virtual void print(uint level = 0) = 0;
+        virtual void print(uint level = 0) = 0;
+    };
 };
 
 #endif  // __SYNTAX_NODES__EXPR_HH__

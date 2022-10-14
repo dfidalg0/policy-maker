@@ -1,5 +1,7 @@
 #include <syntax/nodes/function_call.hh>
 
+using namespace syntax;
+
 void FunctionCall::print(uint level) {
     std::cout << indent(level) << "> Function Call:\n";
     std::cout << indent(level + 2) << "- Name: " << _name << "\n";

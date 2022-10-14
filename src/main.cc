@@ -59,14 +59,14 @@ int main(int argc, char const * argv[]) {
     try {
         auto options = cmd_parser.parse(argc, argv);
 
-        auto ast = parse(options.get("input")).release();
+        auto ast = syntax::parse(options.get("input")).release();
 
         if (options.has("print-ast")) {
             cout << "AST:" << endl;
             ast->print();
         }
 
-        auto result = analyze(ast).release();
+        auto result = semantics::analyze(ast).release();
 
         delete ast;
 
@@ -81,7 +81,7 @@ int main(int argc, char const * argv[]) {
             for (auto [name, symbol] : symbols) {
                 cout << "  - " << name;
 
-                if (symbol->kind() == Symbol::Kind::variable) {
+                if (symbol->kind() == semantics::Symbol::Kind::variable) {
                     auto var = std::static_pointer_cast<semantics::Variable>(symbol);
                     cout << ": Variable" << endl;
                     var->value()->print(4);
@@ -107,7 +107,7 @@ int main(int argc, char const * argv[]) {
 
                 auto default_action = policy.second->default_action();
 
-                cout << Action::kind_to_string(default_action->action_kind());
+                cout << syntax::Action::kind_to_string(default_action->action_kind());
 
                 if (default_action->param() != -1) {
                     cout << "(" << default_action->param() << ")";
@@ -121,7 +121,7 @@ int main(int argc, char const * argv[]) {
                     for (auto & rule : *syscall.second) {
                         cout
                             << "      Action: "
-                            << Action::kind_to_string(rule.second->action_kind());
+                            << syntax::Action::kind_to_string(rule.second->action_kind());
 
                         if (rule.second->param() != -1) {
                             cout << "(" << rule.second->param() << ")";

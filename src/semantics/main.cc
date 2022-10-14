@@ -6,6 +6,8 @@
 
 #include <syscalls.hh>
 
+using namespace semantics;
+
 struct SyscallParamWithIndex {
     uint index;
     gen::SyscallParam param;
@@ -36,28 +38,28 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
     return params;
 }
 
-std::unique_ptr<AnalysisResult> analyze(std::string filename) {
-    Program * prog = parse(filename).get();
+std::unique_ptr<AnalysisResult> semantics::analyze(std::string filename) {
+    syntax::Program * prog = syntax::parse(filename).get();
     return analyze(prog);
 }
 
-std::unique_ptr<AnalysisResult> analyze(Program *prog) {
+std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
     // Primeiro, definimos o escopo global
-    auto global_scope = std::make_shared<Scope>();
+    auto global_scope = std::make_shared<semantics::Scope>();
 
-    using kind = Node::Kind;
+    using kind = syntax::Node::Kind;
 
     for (auto stmt : prog->stmts()) {
         // E o atualizamos com as declarações globais
         switch (stmt->kind()) {
             case kind::function_decl: {
-                auto func_decl = std::static_pointer_cast<FunctionDecl>(stmt);
+                auto func_decl = std::static_pointer_cast<syntax::FunctionDecl>(stmt);
                 auto func = std::make_shared<semantics::Function>(func_decl.get(), global_scope);
                 global_scope->add(func);
                 break;
             }
             case kind::variable_decl: {
-                auto var_decl = std::static_pointer_cast<VariableDecl>(stmt);
+                auto var_decl = std::static_pointer_cast<syntax::VariableDecl>(stmt);
 
                 auto name = var_decl->name();
                 auto value = global_scope->evaluate(var_decl->value());
@@ -74,18 +76,18 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
         }
     }
 
-    auto policies = std::make_shared<Policies>();
+    auto policies = std::make_shared<semantics::Policies>();
 
     for (auto stmt : prog->stmts()) {
         if (stmt->kind() != kind::policy) continue;
 
-        auto policy_stmt = std::static_pointer_cast<Policy>(stmt);
+        auto policy_stmt = std::static_pointer_cast<syntax::Policy>(stmt);
         auto name = policy_stmt->name();
         auto rules = policy_stmt->rules();
 
-        auto policy_rules = std::make_shared<PolicyRules>();
+        auto policy_rules = std::make_shared<semantics::PolicyRules>();
 
-        auto policy = std::make_shared<AnalysisResultPolicy>(
+        auto policy = std::make_shared<semantics::Policy>(
             policy_rules,
             policy_stmt->default_action()
         );
@@ -103,7 +105,7 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
                 auto & overloads = entry.overloads;
 
                 auto syscall_rules = ([&policy_rules, &nr]() {
-                    auto syscall_rules = std::make_shared<SyscallRules>();
+                    auto syscall_rules = std::make_shared<semantics::SyscallRules>();
 
                     auto it = policy_rules->find(nr);
 
@@ -116,7 +118,7 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
                     return syscall_rules;
                 })();
 
-                auto scope = new Scope(global_scope);
+                auto scope = new semantics::Scope(global_scope);
 
                 auto syscall_params = merge_overloads(overloads);
 
@@ -128,7 +130,7 @@ std::unique_ptr<AnalysisResult> analyze(Program *prog) {
                     );
                 }
 
-                std::shared_ptr<Expr> evaluated_condition = scope->evaluate(condition);
+                std::shared_ptr<syntax::Expr> evaluated_condition = scope->evaluate(condition);
 
                 syscall_rules->push_back({
                     evaluated_condition,

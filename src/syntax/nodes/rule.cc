@@ -1,5 +1,7 @@
 #include <syntax/nodes/rule.hh>
 
+using namespace syntax;
+
 void Rule::print(uint level) {
     std::cout << indent(level) << "> Rule: " << std::endl;
 

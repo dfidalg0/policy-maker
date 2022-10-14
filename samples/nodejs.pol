@@ -41,6 +41,7 @@ policy main {
         madvise,
         readlink,
         getcwd,
+        statx,
         dup3,
         exit,
         exit_group,

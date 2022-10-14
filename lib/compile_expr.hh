@@ -11,7 +11,7 @@
 
 typedef std::vector<sock_filter> FilterVector;
 
-std::unique_ptr<FilterVector> compile_expr(Expr * expr);
+std::unique_ptr<FilterVector> compile_expr(syntax::Expr * expr);
 
 class RegisterPool {
 public:

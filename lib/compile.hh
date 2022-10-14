@@ -13,8 +13,8 @@
 
 class CompileResult {
 public:
-    CompileResult(AnalysisResult * ar, std::string entry);
-    CompileResult(Program * program, std::string entry);
+    CompileResult(semantics::AnalysisResult * ar, std::string entry);
+    CompileResult(syntax::Program * program, std::string entry);
     CompileResult(std::string filename, std::string entry);
 
     operator std::string();
@@ -24,8 +24,8 @@ private:
     std::unique_ptr<FilterVector> _filter;
 };
 
-CompileResult compile(AnalysisResult * ar, std::string entry);
-CompileResult compile(Program * program, std::string entry);
+CompileResult compile(semantics::AnalysisResult * ar, std::string entry);
+CompileResult compile(syntax::Program * program, std::string entry);
 CompileResult compile(std::string filename, std::string entry);
 
 #endif // __COMPILE_HH__

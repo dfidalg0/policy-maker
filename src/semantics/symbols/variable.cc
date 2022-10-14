@@ -2,5 +2,5 @@
 
 using namespace semantics;
 
-Variable::Variable(std::string name, std::shared_ptr<Expr> value)
+Variable::Variable(std::string name, std::shared_ptr<syntax::Expr> value)
     : Symbol(Symbol::Kind::variable, name), _value(value) {}

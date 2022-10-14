@@ -1,5 +1,7 @@
 #include <compile_expr.hh>
 
+using namespace syntax;
+
 BinaryExpr::OpKind get_oposite(BinaryExpr::OpKind op);
 
 std::unique_ptr<FilterVector> compile_expr(Expr * expr) {

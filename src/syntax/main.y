@@ -11,17 +11,19 @@
     #include <errors.hh>
 
     struct ReturnValue {
-        Program * program;
+        syntax::Program * program;
         bool success;
 
         ReturnValue(): program(nullptr), success(true) {}
     };
 
-    static Program * program;
+    static syntax::Program * program;
 
-    std::unique_ptr<Program> parse(std::string filename);
+    namespace syntax {
+        std::unique_ptr<syntax::Program> parse(std::string filename);
+    }
 
-    inline BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op);
+    inline syntax::BinaryExpr * bin_expr(syntax::Expr * left, syntax::Expr * right, Token * op);
 
     void yyerror(ReturnValue *, char const *);
 
@@ -30,24 +32,19 @@
     extern FILE * yyin;
 }
 
-%code provides {
-    #include <lexicon/token.hh>
-    #include <syntax.hh>
-}
-
 %define parse.error detailed
 
 %union {
-    Program * program;
+    syntax::Program * program;
     Token * token;
-    Action * action;
-    Syscall * syscall;
+    syntax::Action * action;
+    syntax::Syscall * syscall;
     syntax::SyscallsList * syscall_list;
-    Rule * rule;
+    syntax::Rule * rule;
     syntax::RulesList * rule_list;
-    Stmt * stmt;
-    std::vector<std::shared_ptr<Stmt>> * stmt_list;
-    Expr * expr;
+    syntax::Stmt * stmt;
+    std::vector<std::shared_ptr<syntax::Stmt>> * stmt_list;
+    syntax::Expr * expr;
     syntax::ExprList * expr_list;
     std::vector<std::string> * args_list;
 }
@@ -118,16 +115,16 @@
 
 %%
 program: stmt_list[stmts] YYEOF {
-    auto stmts = std::shared_ptr<std::vector<std::shared_ptr<Stmt>>>($stmts);
+    auto stmts = std::shared_ptr<std::vector<std::shared_ptr<syntax::Stmt>>>($stmts);
 
     if ($stmts->empty()) {
-        $$ = new Program(stmts, { 1, 1 }, { 1, 1 });
+        $$ = new syntax::Program(stmts, { 1, 1 }, { 1, 1 });
     }
     else {
         auto begin = $stmts->at(0)->begin();
         auto end = $stmts->at($stmts->size() - 1)->end();
 
-        $$ = new Program(stmts, begin, end);
+        $$ = new syntax::Program(stmts, begin, end);
     }
 
     ret->program = $$;
@@ -135,19 +132,19 @@ program: stmt_list[stmts] YYEOF {
 
 stmt_list:
     %empty {
-        $$ = new std::vector<std::shared_ptr<Stmt>>();
+        $$ = new std::vector<std::shared_ptr<syntax::Stmt>>();
     }
     | stmt_list[list] stmt[current] {
         $$ = $list;
-        $$->push_back(std::shared_ptr<Stmt>($current));
+        $$->push_back(std::shared_ptr<syntax::Stmt>($current));
     }
 
 stmt: policy_decl | function_decl | variable_decl
 
 variable_decl: IDENTIFIER[name] ASSIGN expr[value] SEMI {
-    $$ = new VariableDecl(
+    $$ = new syntax::VariableDecl(
         $name->text(),
-        std::shared_ptr<Expr>($value),
+        std::shared_ptr<syntax::Expr>($value),
         $name->begin(),
         $SEMI->end()
     );
@@ -155,19 +152,19 @@ variable_decl: IDENTIFIER[name] ASSIGN expr[value] SEMI {
 
 function_decl:
     FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] SEMI {
-        $$ = new FunctionDecl(
+        $$ = new syntax::FunctionDecl(
             $name->text(),
             std::shared_ptr<std::vector<std::string>>($args),
-            std::shared_ptr<Expr>($body),
+            std::shared_ptr<syntax::Expr>($body),
             $FUNCTION->begin(),
             $SEMI->end()
         );
     }
     | FUNCTION IDENTIFIER[name] LPAREN function_args[args] RPAREN ARROW expr[body] error {
-        $$ = new FunctionDecl(
+        $$ = new syntax::FunctionDecl(
             $name->text(),
             std::shared_ptr<std::vector<std::string>>($args),
-            std::shared_ptr<Expr>($body),
+            std::shared_ptr<syntax::Expr>($body),
             $FUNCTION->begin(),
             $body->end()
         );
@@ -196,34 +193,34 @@ policy_decl:
         auto end = $RBRACE->end();
         auto body = std::shared_ptr<syntax::RulesList>($body);
         auto name = $name->text();
-        auto action = std::shared_ptr<Action>($action);
-        $$ = new Policy(name, body, action, begin, end);
+        auto action = std::shared_ptr<syntax::Action>($action);
+        $$ = new syntax::Policy(name, body, action, begin, end);
     }
     | POLICY IDENTIFIER[name] LBRACE policy_body[body] RBRACE {
         auto begin = $POLICY->begin();
         auto end = $RBRACE->end();
         auto name = $name->text();
         auto body = std::shared_ptr<syntax::RulesList>($body);
-        auto action = std::make_shared<Action>(
-            Action::Kind::error, EPERM, begin, end
+        auto action = std::make_shared<syntax::Action>(
+            syntax::Action::Kind::error, EPERM, begin, end
         );
-        $$ = new Policy(name, body, action, begin, end);
+        $$ = new syntax::Policy(name, body, action, begin, end);
     }
 
 policy_body:
     %empty {
-        $$ = new std::vector<std::shared_ptr<Rule>>();
+        $$ = new std::vector<std::shared_ptr<syntax::Rule>>();
     }
     | policy_body[body] rule {
         $$ = $body;
-        $1->push_back(std::shared_ptr<Rule>($rule));
+        $1->push_back(std::shared_ptr<syntax::Rule>($rule));
     }
 
 token_param_action: ERROR | TRAP | TRACE
 
 param_action: token_param_action[token] LPAREN INTEGER[param] RPAREN {
-    $$ = new Action(
-        Action::kind_from_token($token),
+    $$ = new syntax::Action(
+        syntax::Action::kind_from_token($token),
         std::stoi($param->text()),
         $token->begin(),
         $RPAREN->end()
@@ -235,8 +232,8 @@ token_action: ALLOW | KILL | NOTIFY | LOG | TERMINATE
 action:
     param_action
     | token_action[token] {
-        $$ = new Action(
-            Action::kind_from_token($token),
+        $$ = new syntax::Action(
+            syntax::Action::kind_from_token($token),
             -1,
             $token->begin(),
             $token->end()
@@ -244,9 +241,9 @@ action:
     }
 
 rule: action LBRACE rule_body[body] RBRACE {
-    $$ = new Rule(
-        std::shared_ptr<Action>($action),
-        std::shared_ptr<std::vector<std::shared_ptr<Syscall>>>($body),
+    $$ = new syntax::Rule(
+        std::shared_ptr<syntax::Action>($action),
+        std::shared_ptr<std::vector<std::shared_ptr<syntax::Syscall>>>($body),
         $action->begin(),
         $RBRACE->end()
     );
@@ -256,18 +253,18 @@ syscall_name: IDENTIFIER | soft_keyword
 
 syscall:
     LBRACK INTEGER[nr] RBRACK {
-        $$ = new Syscall($nr->text(), nullptr, $LBRACK->begin(), $RBRACK->end());
+        $$ = new syntax::Syscall($nr->text(), nullptr, $LBRACK->begin(), $RBRACK->end());
     }
     | LBRACK INTEGER[nr] RBRACK IF expr[condition] {
-        $$ = new Syscall(
+        $$ = new syntax::Syscall(
             $nr->text(),
-            std::shared_ptr<Expr>($condition),
+            std::shared_ptr<syntax::Expr>($condition),
             $LBRACK->begin(),
             $condition->end()
         );
     }
     | syscall_name[name] {
-        $$ = new Syscall(
+        $$ = new syntax::Syscall(
             $name->text(),
             nullptr,
             $name->begin(),
@@ -275,15 +272,15 @@ syscall:
         );
     }
     | syscall_name[name] IF expr[condition] {
-        $$ = new Syscall(
+        $$ = new syntax::Syscall(
             $name->text(),
-            std::shared_ptr<Expr>($condition),
+            std::shared_ptr<syntax::Expr>($condition),
             $name->begin(),
             $condition->end()
         );
     }
     | syscall_name[name] IF error {
-        $$ = new Syscall(
+        $$ = new syntax::Syscall(
             $name->text(),
             nullptr,
             $name->begin(),
@@ -293,23 +290,23 @@ syscall:
 
 syscall_list:
     syscall[current] {
-        $$ = new std::vector<std::shared_ptr<Syscall>>();
-        $$->push_back(std::shared_ptr<Syscall>($current));
+        $$ = new std::vector<std::shared_ptr<syntax::Syscall>>();
+        $$->push_back(std::shared_ptr<syntax::Syscall>($current));
     }
     | syscall_list[list] COMMA syscall[current] {
         $$ = $list;
-        $$->push_back(std::shared_ptr<Syscall>($current));
+        $$->push_back(std::shared_ptr<syntax::Syscall>($current));
     }
     | syscall_list[list] error syscall[current] {
         $$ = $list;
-        $$->push_back(std::shared_ptr<Syscall>($current));
+        $$->push_back(std::shared_ptr<syntax::Syscall>($current));
     }
 
 optional_comma: COMMA | %empty
 
 rule_body:
     %empty {
-        $$ = new std::vector<std::shared_ptr<Syscall>>();
+        $$ = new std::vector<std::shared_ptr<syntax::Syscall>>();
     }
     | syscall_list optional_comma
 
@@ -390,9 +387,9 @@ unary_op: NOT | LOGICAL_NOT | ADD | SUB
 
 unary_expr:
     unary_op[op] base_expr[expr] {
-        $$ = new UnaryExpr(
-            std::shared_ptr<Expr>($expr),
-            UnaryExpr::kind_from_token($op),
+        $$ = new syntax::UnaryExpr(
+            std::shared_ptr<syntax::Expr>($expr),
+            syntax::UnaryExpr::kind_from_token($op),
             $op->begin(),
             $expr->end()
         );
@@ -405,14 +402,14 @@ base_expr:
     }
     | constant
     | IDENTIFIER[id] {
-        $$ = new Variable(
+        $$ = new syntax::Variable(
             $id->text(),
             $id->begin(),
             $id->end()
         );
     }
     | SYSCALL_PARAM[id] {
-        $$ = new SyscallParam(
+        $$ = new syntax::SyscallParam(
             $id->text().substr(1),
             $id->begin(),
             $id->end()
@@ -424,32 +421,32 @@ boolean: TRUE | FALSE
 
 constant:
     INTEGER[value] {
-        $$ = new Constant(
-            Constant::Type::integer,
+        $$ = new syntax::Constant(
+            syntax::Constant::Type::integer,
             $value->text(),
             $value->begin(),
             $value->end()
         );
     }
     | STRING[value] {
-        $$ = new Constant(
-            Constant::Type::string,
+        $$ = new syntax::Constant(
+            syntax::Constant::Type::string,
             $value->text(),
             $value->begin(),
             $value->end()
         );
     }
     | boolean[value] {
-        $$ = new Constant(
-            Constant::Type::boolean,
+        $$ = new syntax::Constant(
+            syntax::Constant::Type::boolean,
             $value->text(),
             $value->begin(),
             $value->end()
         );
     }
     | NIL[value] {
-        $$ = new Constant(
-            Constant::Type::null,
+        $$ = new syntax::Constant(
+            syntax::Constant::Type::null,
             $value->text(),
             $value->begin(),
             $value->end()
@@ -459,11 +456,11 @@ constant:
 expr_list:
     expr[current] {
         $$ = new syntax::ExprList();
-        $$->push_back(std::shared_ptr<Expr>($current));
+        $$->push_back(std::shared_ptr<syntax::Expr>($current));
     }
     | expr_list[list] COMMA expr[current] {
         $$ = $list;
-        $$->push_back(std::shared_ptr<Expr>($current));
+        $$->push_back(std::shared_ptr<syntax::Expr>($current));
     }
 
 function_params:
@@ -476,7 +473,7 @@ function_params:
 
 function_call:
     IDENTIFIER[name] LPAREN function_params[params] RPAREN {
-        $$ = new FunctionCall(
+        $$ = new syntax::FunctionCall(
             $name->text(),
             std::shared_ptr<syntax::ExprList>($params),
             $name->begin(),
@@ -497,7 +494,7 @@ void yyerror(ReturnValue * ret, char const * err) {
     std::cerr << err << std::endl;
 }
 
-std::unique_ptr<Program> parse(std::string filename) {
+std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {
     auto file = fopen(filename.c_str(), "r");
 
     if (!file) {
@@ -520,14 +517,14 @@ std::unique_ptr<Program> parse(std::string filename) {
         throw ParseError(filename);
     }
 
-    return std::unique_ptr<Program>(program);
+    return std::unique_ptr<syntax::Program>(program);
 }
 
-BinaryExpr * bin_expr(Expr * left, Expr * right, Token * op) {
-    return new BinaryExpr(
-        std::shared_ptr<Expr>(left),
-        std::shared_ptr<Expr>(right),
-        BinaryExpr::kind_from_token(op),
+syntax::BinaryExpr * bin_expr(syntax::Expr * left, syntax::Expr * right, Token * op) {
+    return new syntax::BinaryExpr(
+        std::shared_ptr<syntax::Expr>(left),
+        std::shared_ptr<syntax::Expr>(right),
+        syntax::BinaryExpr::kind_from_token(op),
         left->begin(),
         right->end()
     );

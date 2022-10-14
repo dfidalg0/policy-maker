@@ -12,18 +12,18 @@
 namespace semantics {
     class Function : public Symbol {
     public:
-        Function(FunctionDecl * decl, std::shared_ptr<Scope> scope);
-        std::shared_ptr<Expr> call(std::vector<std::shared_ptr<Expr>> args);
+        Function(syntax::FunctionDecl * decl, std::shared_ptr<Scope> scope);
+        std::shared_ptr<syntax::Expr> call(std::vector<std::shared_ptr<syntax::Expr>> args);
         virtual ~Function(){};
 
         inline const std::vector<std::string> &args() const { return _args; }
-        inline std::shared_ptr<Expr> body() const { return _body; }
+        inline std::shared_ptr<syntax::Expr> body() const { return _body; }
     private:
-        std::shared_ptr<Expr> _body;
+        std::shared_ptr<syntax::Expr> _body;
         std::shared_ptr<Scope> _decl_scope;
         std::vector<std::string> _args;
 
-        void validate(Expr * expr = nullptr);
+        void validate(syntax::Expr * expr = nullptr);
     };
 };
 

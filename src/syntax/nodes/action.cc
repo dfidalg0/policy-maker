@@ -1,5 +1,6 @@
 #include <syntax/nodes/action.hh>
 
+using namespace syntax;
 using tt = yytokentype;
 
 Action::Kind Action::kind_from_token(Token * token) {

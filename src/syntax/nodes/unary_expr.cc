@@ -1,5 +1,7 @@
 #include <syntax/nodes/unary_expr.hh>
 
+using namespace syntax;
+
 void UnaryExpr::print(uint level) {
     std::cout << indent(level) << "> Unary Expression" << std::endl;
     std::cout << indent(level + 2) << "- Operator: " << kind_to_string(_op) << std::endl;

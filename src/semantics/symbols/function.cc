@@ -4,6 +4,11 @@
 
 using namespace semantics;
 
+using syntax::FunctionDecl;
+using syntax::Expr;
+using syntax::UnaryExpr;
+using syntax::BinaryExpr;
+
 Function::Function(
     FunctionDecl * decl,
     std::shared_ptr<Scope> scope
@@ -16,12 +21,12 @@ Function::Function(
     validate();
 }
 
-static void validate_expr(Scope * scope, Expr * expr) {
-    using kind = Expr::Kind;
+static void validate_expr(Scope * scope, syntax::Expr * expr) {
+    using kind = syntax::Expr::Kind;
 
     switch (expr->kind()) {
         case kind::function_call: {
-            auto call = (FunctionCall*)expr;
+            auto call = (syntax::FunctionCall*)expr;
             auto name = call->name();
             auto symbol = scope->find(name);
 
@@ -69,7 +74,7 @@ static void validate_expr(Scope * scope, Expr * expr) {
     }
 }
 
-void Function::validate(Expr * expr) {
+void Function::validate(syntax::Expr * expr) {
     if (expr == nullptr) expr = _body.get();
 
     auto local_scope = new Scope(_decl_scope);
@@ -90,7 +95,7 @@ void Function::validate(Expr * expr) {
     delete local_scope;
 };
 
-std::shared_ptr<Expr> Function::call(std::vector<std::shared_ptr<Expr>> args) {
+std::shared_ptr<syntax::Expr> Function::call(std::vector<std::shared_ptr<syntax::Expr>> args) {
     auto local_scope = new Scope(_decl_scope);
 
     if (args.size() < _args.size()) {

@@ -6,6 +6,9 @@
 #include <semantics/operations.hh>
 
 using namespace semantics;
+using syntax::Constant;
+using syntax::BinaryExpr;
+using syntax::UnaryExpr;
 
 template <class L, class R>
 static std::unique_ptr<Constant> operate(Constant *a, BinaryExpr::OpKind op, Constant *b) {
@@ -150,12 +153,12 @@ std::shared_ptr<Symbol> Scope::find(std::string name) {
     return nullptr;
 }
 
-std::shared_ptr<Expr> Scope::evaluate(std::shared_ptr<Expr> expr) {
+std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr) {
     if (!expr) return nullptr;
 
     switch (expr->kind()) {
-        case Expr::Kind::function_call: {
-            auto call = std::static_pointer_cast<FunctionCall>(expr);
+        case syntax::Expr::Kind::function_call: {
+            auto call = std::static_pointer_cast<syntax::FunctionCall>(expr);
             auto name = call->name();
             auto symbol = find(name);
 
@@ -170,21 +173,21 @@ std::shared_ptr<Expr> Scope::evaluate(std::shared_ptr<Expr> expr) {
             auto function = std::static_pointer_cast<semantics::Function>(symbol);
             auto args = call->args();
 
-            auto evaluated_args = std::vector<std::shared_ptr<Expr>>(args.size());
+            auto evaluated_args = std::vector<std::shared_ptr<syntax::Expr>>(args.size());
 
             std::transform(
                 args.begin(),
                 args.end(),
                 evaluated_args.begin(),
-                [this](std::shared_ptr<Expr> expr) {
+                [this](std::shared_ptr<syntax::Expr> expr) {
                     return this->evaluate(expr);
                 }
             );
 
             return function->call(evaluated_args);
         }
-        case Expr::Kind::variable: {
-            auto variable = std::static_pointer_cast<::Variable>(expr);
+        case syntax::Expr::Kind::variable: {
+            auto variable = std::static_pointer_cast<syntax::Variable>(expr);
             auto name = variable->name();
             auto symbol = find(name);
 
@@ -199,8 +202,8 @@ std::shared_ptr<Expr> Scope::evaluate(std::shared_ptr<Expr> expr) {
             auto var = std::static_pointer_cast<semantics::Variable>(symbol);
             return var->value();
         }
-        case Expr::Kind::syscall_param: {
-            auto param = std::static_pointer_cast<::SyscallParam>(expr);
+        case syntax::Expr::Kind::syscall_param: {
+            auto param = std::static_pointer_cast<syntax::SyscallParam>(expr);
 
             try {
                 std::stoi(param->name());
@@ -218,19 +221,19 @@ std::shared_ptr<Expr> Scope::evaluate(std::shared_ptr<Expr> expr) {
 
                 auto index = sys_param->index();
 
-                return std::make_shared<::SyscallParam>(
+                return std::make_shared<syntax::SyscallParam>(
                     std::to_string(index),
                     param->begin(),
                     param->end()
                 );
             }
         }
-        case Expr::Kind::unary_expr: {
+        case syntax::Expr::Kind::unary_expr: {
             auto unary = std::static_pointer_cast<UnaryExpr>(expr);
 
             return simplify(unary);
         }
-        case Expr::Kind::binary_expr: {
+        case syntax::Expr::Kind::binary_expr: {
             auto binary = std::static_pointer_cast<BinaryExpr>(expr);
 
             return simplify(binary);
@@ -241,7 +244,7 @@ std::shared_ptr<Expr> Scope::evaluate(std::shared_ptr<Expr> expr) {
     }
 }
 
-std::shared_ptr<Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) {
+std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) {
     using type = Constant::Type;
     using opKind = UnaryExpr::OpKind;
 
@@ -250,7 +253,7 @@ std::shared_ptr<Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) {
     auto begin = unary->begin();
     auto end = unary->end();
 
-    if (operand->kind() != Expr::Kind::constant) {
+    if (operand->kind() != syntax::Expr::Kind::constant) {
         return std::make_unique<UnaryExpr>(
             operand,
             op,
@@ -323,9 +326,9 @@ std::shared_ptr<Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) {
     }
 }
 
-std::shared_ptr<Expr> Scope::simplify(std::shared_ptr<BinaryExpr> binary) {
+std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<BinaryExpr> binary) {
     using type = Constant::Type;
-    using kind = Expr::Kind;
+    using kind = syntax::Expr::Kind;
 
     auto left = evaluate(binary->left());
     auto right = evaluate(binary->right());

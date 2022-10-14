@@ -1,5 +1,7 @@
 #include <syntax/nodes/syscall.hh>
 
+using namespace syntax;
+
 void Syscall::print(uint level) {
     std::cout << indent(level) << "> Syscall: " << _name << std::endl;
 

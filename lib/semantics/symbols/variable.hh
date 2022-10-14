@@ -10,11 +10,11 @@
 namespace semantics {
     class Variable : public Symbol {
     public:
-        Variable(std::string name, std::shared_ptr<Expr> value = nullptr);
+        Variable(std::string name, std::shared_ptr<syntax::Expr> value = nullptr);
 
-        inline std::shared_ptr<Expr> value() const { return _value; };
+        inline std::shared_ptr<syntax::Expr> value() const { return _value; };
     private:
-        std::shared_ptr<Expr> _value;
+        std::shared_ptr<syntax::Expr> _value;
     };
 };
 

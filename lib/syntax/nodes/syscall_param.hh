@@ -3,22 +3,24 @@
 
 #include "_expr.hh"
 
-class SyscallParam : public Expr {
-private:
-    std::string _name;
+namespace syntax {
+    class SyscallParam : public Expr {
+    private:
+        std::string _name;
 
-public:
-    SyscallParam(
-        std::string name,
-        Position begin = Position(0, 0),
-        Position end = Position(0, 0)
-    ) : Expr(Node::Kind::syscall_param, begin, end), _name(name) {}
+    public:
+        SyscallParam(
+            std::string name,
+            Position begin = Position(0, 0),
+            Position end = Position(0, 0)
+        ) : syntax::Expr(Node::Kind::syscall_param, begin, end), _name(name) {}
 
-    inline std::string name() const { return _name; }
+        inline std::string name() const { return _name; }
 
-    void print(uint level = 0) override;
+        void print(uint level = 0) override;
 
-    uint index();
+        uint index();
+    };
 };
 
 #endif // __SYNTAX_NODES_SYSCALL_PARAM_HH__

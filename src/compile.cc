@@ -10,20 +10,20 @@
 // Tipos auxiliares
 struct SyscallRulesWithNumber {
     uint nr;
-    std::shared_ptr<SyscallRules> rules;
+    std::shared_ptr<semantics::SyscallRules> rules;
 };
 
 // Cabeçalhos auxiliares
-std::shared_ptr<AnalysisResultPolicy> get_policy(AnalysisResult * ar, std::string & entry);
-sock_filter get_seccomp_ret(Action * action);
-std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<PolicyRules> rules);
+std::shared_ptr<semantics::Policy> get_policy(semantics::AnalysisResult * ar, std::string & entry);
+sock_filter get_seccomp_ret(syntax::Action * action);
+std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<semantics::PolicyRules> rules);
 
 // Declaração da função de compilação
-CompileResult compile(AnalysisResult *ar, std::string entry) {
+CompileResult compile(semantics::AnalysisResult *ar, std::string entry) {
     return CompileResult(ar, entry);
 }
 
-CompileResult compile(Program *program, std::string entry) {
+CompileResult compile(syntax::Program *program, std::string entry) {
     return CompileResult(program, entry);
 }
 
@@ -32,14 +32,14 @@ CompileResult compile(std::string filename, std::string entry) {
 }
 
 // Implementação da geração do filtro
-CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
+CompileResult::CompileResult(semantics::AnalysisResult * ar, std::string entry) {
     auto policy = get_policy(ar, entry);
 
     auto order = get_resolution_order(policy->rules());
 
     _filter = std::make_unique<FilterVector>();
 
-    using kind = Expr::Kind;
+    using kind = syntax::Expr::Kind;
 
     auto default_action = get_seccomp_ret(policy->default_action().get());
 
@@ -83,11 +83,11 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
             // Se não foi especificada uma condição, é porque esta será tratada
             // como sempre verdadeira.
             if (expr == nullptr) {
-                expr = std::make_shared<Constant>(true);
+                expr = std::make_shared<syntax::Constant>(true);
             }
 
             auto constant = expr->kind() == kind::constant
-                ? std::static_pointer_cast<Constant>(expr)
+                ? std::static_pointer_cast<syntax::Constant>(expr)
                 : nullptr;
 
             // Se a condição for uma constante verdadeira, podemos ignorar
@@ -193,11 +193,11 @@ CompileResult::CompileResult(AnalysisResult * ar, std::string entry) {
     std::reverse(_filter->begin(), _filter->end());
 }
 
-CompileResult::CompileResult(Program *program, std::string entry)
-    : CompileResult(analyze(program).get(), entry) {}
+CompileResult::CompileResult(syntax::Program *program, std::string entry)
+    : CompileResult(semantics::analyze(program).get(), entry) {}
 
 CompileResult::CompileResult(std::string filename, std::string entry)
-    : CompileResult(analyze(filename).get(), entry) {}
+    : CompileResult(semantics::analyze(filename).get(), entry) {}
 
 // Conversão do filtro para código em C
 CompileResult::operator std::string() {
@@ -438,7 +438,7 @@ CompileResult::operator sock_fprog() {
     };
 }
 
-std::shared_ptr<AnalysisResultPolicy> get_policy(AnalysisResult *ar, std::string &entry) {
+std::shared_ptr<semantics::Policy> get_policy(semantics::AnalysisResult *ar, std::string &entry) {
     auto it = ar->policies()->find(entry);
 
     if (it == ar->policies()->end()) {
@@ -448,8 +448,10 @@ std::shared_ptr<AnalysisResultPolicy> get_policy(AnalysisResult *ar, std::string
     return it->second;
 }
 
-sock_filter get_seccomp_ret(Action *action) {
+sock_filter get_seccomp_ret(syntax::Action *action) {
     static const ushort CODE = BPF_RET | BPF_K;
+
+    using syntax::Action;
 
     switch (action->action_kind()) {
         case Action::Kind::error:
@@ -473,7 +475,7 @@ sock_filter get_seccomp_ret(Action *action) {
     }
 }
 
-std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<PolicyRules> rules) {
+std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<semantics::PolicyRules> rules) {
     static auto log = [](int x) {
         int ret = 0;
 

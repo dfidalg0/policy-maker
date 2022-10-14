@@ -1,5 +1,7 @@
 #include <syntax/nodes/program.hh>
 
+using namespace syntax;
+
 void Program::print(uint level) {
     std::cout << indent(level) << "> Program: " << std::endl;
 

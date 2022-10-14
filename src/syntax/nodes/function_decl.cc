@@ -1,5 +1,7 @@
 #include <syntax/nodes/function_decl.hh>
 
+using namespace syntax;
+
 void FunctionDecl::print(uint level) {
     std::cout << indent(level) << "> Function Declaration:\n";
     std::cout << indent(level + 2) << "- Name: " << _name << "\n";

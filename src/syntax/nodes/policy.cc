@@ -1,5 +1,7 @@
 #include <syntax/nodes/policy.hh>
 
+using namespace syntax;
+
 void Policy::print(uint level) {
     std::cout << indent(level) << "> Policy Declaration: " << std::endl;
 

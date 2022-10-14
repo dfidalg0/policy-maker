@@ -1,5 +1,7 @@
 #include <syntax/nodes/syscall_param.hh>
 
+using namespace syntax;
+
 void SyscallParam::print(uint level) {
     std::cout << indent(level) << "> SyscallParam: \n";
 

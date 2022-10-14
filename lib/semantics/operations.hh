@@ -3,8 +3,6 @@
 
 #include <string>
 
-using str = std::string;
-
 // int-int operators
 int add(int a, int b);
 int subtract(int a, int b);
@@ -46,23 +44,23 @@ bool logical_and(bool a, bool b);
 bool logical_or(bool a, bool b);
 
 // string-string operators
-str add(str a, str b);
-str subtract(str a, str b);
-str multiply(str a, str b);
-str divide(str a, str b);
-str modulo(str a, str b);
-str bit_and(str a, str b);
-str bit_or(str a, str b);
-str bit_xor(str a, str b);
-str bit_lsh(str a, str b);
-str bit_rsh(str a, str b);
-bool equal(str a, str b);
-bool not_equal(str a, str b);
-bool less_than(str a, str b);
-bool less_than_equal(str a, str b);
-bool greater_than(str a, str b);
-bool greater_than_equal(str a, str b);
-bool logical_and(str a, str b);
-bool logical_or(str a, str b);
+std::string add(std::string a, std::string b);
+std::string subtract(std::string a, std::string b);
+std::string multiply(std::string a, std::string b);
+std::string divide(std::string a, std::string b);
+std::string modulo(std::string a, std::string b);
+std::string bit_and(std::string a, std::string b);
+std::string bit_or(std::string a, std::string b);
+std::string bit_xor(std::string a, std::string b);
+std::string bit_lsh(std::string a, std::string b);
+std::string bit_rsh(std::string a, std::string b);
+bool equal(std::string a, std::string b);
+bool not_equal(std::string a, std::string b);
+bool less_than(std::string a, std::string b);
+bool less_than_equal(std::string a, std::string b);
+bool greater_than(std::string a, std::string b);
+bool greater_than_equal(std::string a, std::string b);
+bool logical_and(std::string a, std::string b);
+bool logical_or(std::string a, std::string b);
 
 #endif // __SEMANTICS_OPERATIONS_HH__
