@@ -15,7 +15,7 @@ def main():
         writer.write('''#ifndef __SYSCALLS__
 #define __SYSCALLS__
 
-#include <stdexcept>
+#include <errors.hh>
 
 # ifdef __i386__
 #  include "syscalls/x86_32.hh"
@@ -40,10 +40,10 @@ gen::SyscallEntry get_syscall_entry(const std::string &name) {
             // do nothing
         }
         catch (std::out_of_range &) {
-            throw std::runtime_error("Syscall number out of range");
+            throw CompilerError("Syscall number out of range");
         }
 
-        throw std::runtime_error("Unknown syscall: " + name);
+        throw CompilerError("Unknown syscall: " + name);
     }
 
     return it->second;

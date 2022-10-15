@@ -3,6 +3,7 @@
 #include <semantics.hh>
 #include <algorithm>
 #include <memory>
+#include <errors.hh>
 #include <semantics/operations.hh>
 
 using namespace semantics;
@@ -127,7 +128,7 @@ static std::unique_ptr<Constant> operate(Constant *a, BinaryExpr::OpKind op, Con
                 b->end()
             );
         default:
-            throw std::runtime_error("Invalid operation");
+            throw CompilerError("Invalid operation");
     }
 }
 
@@ -135,7 +136,7 @@ Scope& Scope::add(std::shared_ptr<Symbol> symbol) {
     auto name = symbol->name();
 
     if (_symbols.find(name) != _symbols.end()) {
-        throw std::runtime_error("Symbol already defined");
+        throw CompilerError("Symbol already defined: " + name);
     }
 
     _symbols[symbol->name()] = symbol;
@@ -163,11 +164,13 @@ std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr
             auto symbol = find(name);
 
             if (symbol == nullptr) {
-                throw std::runtime_error("Function not defined: " + name);
+                throw CompilerError("Function not defined: " + name)
+                    .push(call->begin(), "function call");
             }
 
             if (symbol->kind() != Symbol::Kind::function) {
-                throw std::runtime_error("Not a function: " + name);
+                throw CompilerError("Not a function: " + name)
+                    .push(call->begin(), "function call");
             }
 
             auto function = std::static_pointer_cast<semantics::Function>(symbol);
@@ -175,16 +178,26 @@ std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr
 
             auto evaluated_args = std::vector<std::shared_ptr<syntax::Expr>>(args.size());
 
-            std::transform(
-                args.begin(),
-                args.end(),
-                evaluated_args.begin(),
-                [this](std::shared_ptr<syntax::Expr> expr) {
-                    return this->evaluate(expr);
-                }
-            );
+            try {
+                std::transform(
+                    args.begin(),
+                    args.end(),
+                    evaluated_args.begin(),
+                    [this](std::shared_ptr<syntax::Expr> expr) {
+                        return this->evaluate(expr);
+                    }
+                );
+            }
+            catch (CompilerError& e) {
+                throw e.push(call->begin(), "function call");
+            }
 
-            return function->call(evaluated_args);
+            try {
+                return function->call(evaluated_args);
+            }
+            catch (CompilerError &e) {
+                throw e.push(call->begin(), "function call");
+            }
         }
         case syntax::Expr::Kind::variable: {
             auto variable = std::static_pointer_cast<syntax::Variable>(expr);
@@ -192,11 +205,13 @@ std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr
             auto symbol = find(name);
 
             if (symbol == nullptr) {
-                throw std::runtime_error("Variable not defined: " + name);
+                throw CompilerError("Variable not defined: " + name)
+                    .push(variable->begin(), "variable access");
             }
 
             if (symbol->kind() != Symbol::Kind::variable) {
-                throw std::runtime_error("Not a variable: " + name);
+                throw CompilerError("Not a variable: " + name)
+                    .push(variable->begin(), "variable access");
             }
 
             auto var = std::static_pointer_cast<semantics::Variable>(symbol);
@@ -214,7 +229,8 @@ std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr
                 auto symbol = find(":" + name);
 
                 if (symbol == nullptr || symbol->kind() != Symbol::Kind::syscall_param) {
-                    throw std::runtime_error("Syscall parameter not defined: " + name);
+                    throw CompilerError("Syscall parameter not defined: " + name)
+                        .push(param->begin(), "syscall parameter access");
                 }
 
                 auto sys_param = std::static_pointer_cast<semantics::SyscallParam>(symbol);
@@ -231,12 +247,24 @@ std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr
         case syntax::Expr::Kind::unary_expr: {
             auto unary = std::static_pointer_cast<UnaryExpr>(expr);
 
-            return simplify(unary);
+            try {
+                return simplify(unary);
+            }
+            catch (CompilerError & e) {
+                throw e
+                    .push(unary->begin(), "expression");
+            }
         }
         case syntax::Expr::Kind::binary_expr: {
             auto binary = std::static_pointer_cast<BinaryExpr>(expr);
 
-            return simplify(binary);
+            try {
+                return simplify(binary);
+            }
+            catch (CompilerError & e) {
+                throw e
+                    .push(binary->begin(), "expression");
+            }
         }
         default: {
             return expr;
@@ -307,7 +335,7 @@ std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) 
                     return std::make_unique<Constant>(true, begin, end);
                 }
                 default: {
-                    throw std::runtime_error("Invalid operation");
+                    throw CompilerError("Invalid operation with null");
                 }
             }
         }
@@ -319,7 +347,7 @@ std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) 
                     return std::make_unique<Constant>(!value.empty(), begin, end);
                 }
                 default: {
-                    throw std::runtime_error("Invalid operation");
+                    throw CompilerError("Invalid operation with string");
                 }
             }
         }
@@ -356,7 +384,8 @@ std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<BinaryExpr> binary
     auto cr = std::static_pointer_cast<Constant>(right);
 
     if (cl->type() == type::null || cr->type() == type::null) {
-        throw std::runtime_error("Invalid operation");
+        throw CompilerError("Invalid operation with null")
+            .push(binary->begin(), "expression");
     }
 
     switch (cl->type()) {

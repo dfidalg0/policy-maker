@@ -3,7 +3,7 @@
 using namespace syntax;
 
 void Program::print(uint level) {
-    std::cout << indent(level) << "> Program: " << std::endl;
+    std::cout << indent(level) << "> Program: " << _filename << '\n';
 
     if (_stmts->empty()) {
         std::cout << indent(level + 2) << "No statements" << std::endl;

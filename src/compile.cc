@@ -5,6 +5,7 @@
 #include <utility>
 #include <stddef.h>
 #include <sstream>
+#include <errors.hh>
 
 
 // Tipos auxiliares
@@ -20,7 +21,12 @@ std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<semanti
 
 // Declaração da função de compilação
 CompileResult compile(semantics::AnalysisResult *ar, std::string entry) {
-    return CompileResult(ar, entry);
+    try {
+        return CompileResult(ar, entry);
+    }
+    catch (CompilerError& e) {
+        throw e.build(ar->filename());
+    }
 }
 
 CompileResult compile(syntax::Program *program, std::string entry) {
@@ -121,7 +127,14 @@ CompileResult::CompileResult(semantics::AnalysisResult * ar, std::string entry) 
                 BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, 0, 0, 1)
             );
 
-            auto compiled_expr = compile_expr(expr.get());
+            std::unique_ptr<FilterVector> compiled_expr;
+
+            try {
+                compiled_expr = compile_expr(expr.get());
+            }
+            catch (CompilerError& e) {
+                throw e.push(expr->begin(), "expression");
+            }
 
             for (auto it = compiled_expr->rbegin(); it != compiled_expr->rend(); it++) {
                 _filter->push_back(*it);
@@ -442,7 +455,7 @@ std::shared_ptr<semantics::Policy> get_policy(semantics::AnalysisResult *ar, std
     auto it = ar->policies()->find(entry);
 
     if (it == ar->policies()->end()) {
-        throw std::runtime_error("Policy not found: " + entry);
+        throw CompilerError("Policy not found: " + entry);
     }
 
     return it->second;
@@ -471,7 +484,7 @@ sock_filter get_seccomp_ret(syntax::Action *action) {
         case Action::Kind::terminate:
             return BPF_STMT(CODE, SECCOMP_RET_KILL_PROCESS);
         default:
-            throw std::runtime_error("Invalid action");
+            throw std::runtime_error("Never should be here");
     }
 }
 

@@ -187,7 +187,7 @@ int main(int argc, char const * argv[]) {
         cerr << e.what() << endl;
         return 1;
     }
-    catch(ParseError e) {
+    catch (CompilerError e) {
         cerr << e.what() << endl;
         return 2;
     }

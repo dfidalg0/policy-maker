@@ -42,6 +42,8 @@ namespace syntax {
         inline Kind action_kind() const { return _action_kind; }
         inline int param() const { return _param; }
 
+        inline std::string to_string() const { return kind_to_string(_action_kind); }
+
         void print(uint level = 0) override;
 
     private:

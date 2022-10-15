@@ -9,13 +9,15 @@
     #include <syntax/nodes.hh>
     #include <lexicon/token.hh>
     #include <lexicon/context.hh>
+    #include <stdexcept>
+    #include <sstream>
     #include <errors.hh>
 
     struct ReturnValue {
         syntax::Program * program;
-        bool success;
+        std::stringstream error;
 
-        ReturnValue(): program(nullptr), success(true) {}
+        ReturnValue(): program(nullptr) {}
     };
 
     static syntax::Program * program;
@@ -26,7 +28,10 @@
 
     inline syntax::BinaryExpr * bin_expr(syntax::Expr * left, syntax::Expr * right, Token * op);
 
-    void yyerror(void *, lexicon::Context*, ReturnValue *, char const *);
+    #define YYERROR_DECL void \
+    yyerror(void * scanner, lexicon::Context * ctx, std::string filename, ReturnValue * ret, char const * err)
+
+    YYERROR_DECL;
 }
 
 %code provides {
@@ -59,6 +64,7 @@
 
 %parse-param { void * yyscanner }
 %parse-param { lexicon::Context * ctx }
+%parse-param { std::string filename }
 %parse-param { ReturnValue * ret }
 %lex-param { void * yyscanner }
 %lex-param { lexicon::Context * ctx }
@@ -130,13 +136,13 @@ program: stmt_list[stmts] YYEOF {
     auto stmts = std::shared_ptr<std::vector<std::shared_ptr<syntax::Stmt>>>($stmts);
 
     if ($stmts->empty()) {
-        $$ = new syntax::Program(stmts, { 1, 1 }, { 1, 1 });
+        $$ = new syntax::Program(filename, stmts, { 1, 1 }, { 1, 1 });
     }
     else {
         auto begin = $stmts->at(0)->begin();
         auto end = $stmts->at($stmts->size() - 1)->end();
 
-        $$ = new syntax::Program(stmts, begin, end);
+        $$ = new syntax::Program(filename, stmts, begin, end);
     }
 
     ret->program = $$;
@@ -495,10 +501,12 @@ soft_keyword: token_keyword {
     delete $1;
 }
 %%
-void yyerror(void *, lexicon::Context *, ReturnValue * ret, char const * err) {
-    ret->success = false;
+YYERROR_DECL {
+    auto token = ctx->last_token;
 
-    std::cerr << err << std::endl;
+    ret->error
+        << "Syntax error: " << (err + sizeof("sintax error,")) << '\n'
+        << "    at " << filename << ':' << token->begin();
 }
 
 std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {
@@ -515,19 +523,20 @@ std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {
 
     yylex_init(&yyscanner);
     yyset_in(file, yyscanner);
-    yyparse(yyscanner, ctx, ret);
-    yylex_destroy(yyscanner);
+    yyparse(yyscanner, ctx, filename, ret);
 
     auto program = ret->program;
-    auto success = ret->success;
+    auto err = ret->error.str();
 
+    yylex_destroy(yyscanner);
+    fclose(file);
     delete ret;
     delete ctx;
 
-    if (!success) {
+    if (err.size()) {
         delete program;
 
-        throw ParseError(filename);
+        throw std::runtime_error(err);
     }
 
     return std::unique_ptr<syntax::Program>(program);

@@ -390,6 +390,6 @@ BinaryExpr::OpKind get_oposite(BinaryExpr::OpKind op) {
         case Op::lt: return Op::ge;
         case Op::ge: return Op::lt;
         case Op::le: return Op::gt;
-        default: throw std::runtime_error("Invalid op");
+        default: throw std::runtime_error("Never should happen");
     }
 }

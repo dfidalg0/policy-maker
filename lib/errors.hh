@@ -3,6 +3,9 @@
 
 #include <exception>
 #include <string>
+#include <vector>
+#include <sstream>
+#include <lexicon/position.hh>
 
 class FileNotFoundError : public std::exception {
 public:
@@ -16,16 +19,43 @@ private:
     const std::string _msg;
 };
 
-class ParseError : public std::exception {
+class CompilerError: public std::exception {
 public:
-    ParseError(const std::string file)
-        : _msg("Error while parsing file: \"" + file + "\"") {}
+    CompilerError(const std::string msg)
+        : _msg(msg) {}
 
     virtual const char *what() const noexcept {
         return _msg.c_str();
     }
+
+    const std::string& msg() const {
+        return _msg;
+    }
+
+    CompilerError& push(const Position pos, std::string desc) {
+        _stack.push_back({ pos, desc });
+        return *this;
+    }
+
+    CompilerError build(std::string filename) {
+        std::stringstream ss;
+
+        ss << _msg;
+
+        for (auto& [pos, desc] : _stack) {
+            ss << "\n    at " << desc << " (" << filename << ":" << pos << ")";
+        }
+
+        return CompilerError(ss.str());
+    }
 private:
+    struct StackFrame {
+        Position pos;
+        std::string desc;
+    };
+
     const std::string _msg;
+    std::vector<StackFrame> _stack;
 };
 
 #endif // __ERRORS_HH__

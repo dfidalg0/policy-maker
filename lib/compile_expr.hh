@@ -6,6 +6,7 @@
 #include <linux/filter.h>
 #include <linux/seccomp.h>
 #include <syntax/nodes.hh>
+#include <errors.hh>
 
 #define SECCOMP_DATA(name) offsetof(seccomp_data, name)
 
@@ -48,7 +49,7 @@ public:
             }
         }
 
-        throw std::runtime_error("Expression too complex");
+        throw CompilerError("Expression too complex");
     }
 
 private:

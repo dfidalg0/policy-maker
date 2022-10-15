@@ -1,6 +1,7 @@
 #include <syntax/nodes.hh>
 #include <semantics/symbols/function.hh>
 #include <semantics/symbols/variable.hh>
+#include <errors.hh>
 
 using namespace semantics;
 
@@ -18,7 +19,14 @@ Function::Function(
 
     _args = decl->args();
 
-    validate();
+    try {
+        validate();
+    }
+    catch (CompilerError& e) {
+        throw e
+            .push(_body->begin(), "function body")
+            .push(decl->begin(), "function declaration");
+    }
 }
 
 static void validate_expr(Scope * scope, syntax::Expr * expr) {
@@ -31,26 +39,30 @@ static void validate_expr(Scope * scope, syntax::Expr * expr) {
             auto symbol = scope->find(name);
 
             if (symbol == nullptr) {
-                throw std::runtime_error("Function not defined");
+                throw CompilerError("Function not defined: " + name)
+                    .push(call->begin(), "function call");
             }
 
             if (symbol->kind() != Symbol::Kind::function) {
-                throw std::runtime_error("Not a function");
+                throw CompilerError("Not a function: " + name)
+                    .push(call->begin(), "function call");
             }
 
             break;
         }
         case kind::variable: {
-            auto variable = (::Variable*)expr;
+            auto variable = (syntax::Variable*)expr;
             auto name = variable->name();
             auto symbol = scope->find(name);
 
             if (symbol == nullptr) {
-                throw std::runtime_error("Variable not defined");
+                throw CompilerError("Variable not defined: " + name)
+                    .push(variable->begin(), "variable access");
             }
 
             if (symbol->kind() != Symbol::Kind::variable) {
-                throw std::runtime_error("Not a variable");
+                throw CompilerError("Not a variable: " + name)
+                    .push(variable->begin(), "variable access");
             }
 
             break;
@@ -67,9 +79,10 @@ static void validate_expr(Scope * scope, syntax::Expr * expr) {
             break;
         }
         case kind::syscall_param: {
-            throw std::runtime_error(
-                "Syscall param not allowed inside function body"
-            );
+            auto param = (syntax::SyscallParam*)expr;
+
+            throw CompilerError("Syscall param not allowed inside function body")
+                .push(param->begin(), "syscall param access");
         }
     }
 }
@@ -87,7 +100,7 @@ void Function::validate(syntax::Expr * expr) {
     try {
         validate_expr(local_scope, expr);
     }
-    catch (std::runtime_error & e) {
+    catch (CompilerError & e) {
         delete local_scope;
         throw e;
     }
@@ -99,7 +112,10 @@ std::shared_ptr<syntax::Expr> Function::call(std::vector<std::shared_ptr<syntax:
     auto local_scope = new Scope(_decl_scope);
 
     if (args.size() < _args.size()) {
-        throw std::runtime_error("Invalid number of arguments");
+        throw CompilerError(
+            "Invalid number of arguments. Expected" + std::to_string(args.size()) + "\n"
+            "  at function " + name()
+        );
     }
 
     for (int i = 0; i < _args.size(); i++) {

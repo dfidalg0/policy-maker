@@ -12,14 +12,18 @@ namespace syntax {
     class Program : public Node {
     private:
         std::shared_ptr<StmtList> _stmts;
+        std::string _filename;
     public:
         Program(
+            std::string filename,
             std::shared_ptr<StmtList> stmts,
             Position begin = Position(0 , 0),
             Position end = Position(0, 0)
-        ) : Node(Node::Kind::program, begin, end), _stmts(stmts) {};
+        ) : Node(Node::Kind::program, begin, end), _filename(filename), _stmts(stmts) {};
 
-        inline StmtList stmts() { return *_stmts; }
+        inline StmtList& stmts() { return *_stmts; }
+
+        inline std::string& filename() { return _filename; }
 
         void print(uint level = 0) override;
     };

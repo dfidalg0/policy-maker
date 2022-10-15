@@ -109,7 +109,7 @@ SET_TOKEN_DECL {
     ctx->line_end = ctx->line_start;
     ctx->col_end = ctx->col_start + leng;
 
-    yylval->token = new Token(
+    yylval->token = ctx->last_token = new Token(
         type,
         Position(ctx->line_start, ctx->col_start),
         Position(ctx->line_end,   ctx->col_end  ),

@@ -34,16 +34,20 @@ namespace semantics {
     class AnalysisResult {
     public:
         AnalysisResult(
+            std::string filename,
             std::shared_ptr<Policies> policies,
             std::shared_ptr<Scope> scope
-        ) : _policies(policies), _scope(scope) {}
+        ) : _filename(filename), _policies(policies), _scope(scope) {}
 
         inline std::shared_ptr<Policies> policies() { return _policies; }
 
         inline std::shared_ptr<Scope> scope() { return _scope; }
+
+        inline std::string filename() { return _filename; }
     private:
         std::shared_ptr<Policies> _policies;
         std::shared_ptr<Scope> _scope;
+        std::string _filename;
     };
 
     std::unique_ptr<AnalysisResult> analyze(std::string filename);

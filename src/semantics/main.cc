@@ -2,6 +2,7 @@
 #include <syntax/nodes/function_decl.hh>
 #include <syntax/nodes/variable_decl.hh>
 #include <parser.yy.hh>
+#include <errors.hh>
 #include <set>
 
 #include <syscalls.hh>
@@ -39,7 +40,7 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
 }
 
 std::unique_ptr<AnalysisResult> semantics::analyze(std::string filename) {
-    syntax::Program * prog = syntax::parse(filename).get();
+    auto prog = syntax::parse(filename).get();
     return analyze(prog);
 }
 
@@ -54,23 +55,52 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
         switch (stmt->kind()) {
             case kind::function_decl: {
                 auto func_decl = std::static_pointer_cast<syntax::FunctionDecl>(stmt);
-                auto func = std::make_shared<semantics::Function>(func_decl.get(), global_scope);
-                global_scope->add(func);
+
+                try {
+                    auto func = std::make_shared<semantics::Function>(func_decl.get(), global_scope);
+
+                    global_scope->add(func);
+                }
+                catch (CompilerError& e) {
+                    throw e.build(prog->filename());
+                }
                 break;
             }
             case kind::variable_decl: {
                 auto var_decl = std::static_pointer_cast<syntax::VariableDecl>(stmt);
 
                 auto name = var_decl->name();
-                auto value = global_scope->evaluate(var_decl->value());
+
+                std::shared_ptr<syntax::Expr> value;
+
+                try {
+                    value = global_scope->evaluate(var_decl->value());
+                }
+                catch (CompilerError& e) {
+                    throw e
+                        .push(var_decl->value()->begin(), "value definition")
+                        .push(var_decl->begin(), "variable declaration")
+                        .build(prog->filename());
+                }
 
                 if (value->kind() != kind::constant) {
-                    throw std::runtime_error("Global variables must be constant");
+                    throw CompilerError("Invalid global variable expression: " + name)
+                        .push(value->begin(), "value definition")
+                        .push(var_decl->begin(), "variable declaration")
+                        .build(prog->filename());
                 }
 
                 auto var = std::make_shared<semantics::Variable>(name, value);
 
-                global_scope->add(var);
+                try {
+                    global_scope->add(var);
+                }
+                catch (CompilerError& e) {
+                    throw e
+                        .push(var_decl->value()->begin(), "variable declaration")
+                        .build(prog->filename());
+                }
+
                 break;
             }
         }
@@ -82,7 +112,7 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
         if (stmt->kind() != kind::policy) continue;
 
         auto policy_stmt = std::static_pointer_cast<syntax::Policy>(stmt);
-        auto name = policy_stmt->name();
+        auto policy_name = policy_stmt->name();
         auto rules = policy_stmt->rules();
 
         auto policy_rules = std::make_shared<semantics::PolicyRules>();
@@ -92,14 +122,28 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
             policy_stmt->default_action()
         );
 
-        policies->insert({name, policy});
+        policies->insert({policy_name, policy});
 
         for (auto &rule : rules) {
             for (auto &syscall : rule->syscalls()) {
-                auto name = syscall->name();
+                auto sc_name = syscall->name();
                 auto condition = syscall->condition();
 
-                auto entry = get_syscall_entry(name);
+                gen::SyscallEntry entry;
+
+                try {
+                    entry = get_syscall_entry(sc_name);
+                }
+                catch (CompilerError & e) {
+                    auto action_kind = rule->action()->action_kind();
+                    auto action_str = syntax::Action::kind_to_string(action_kind);
+
+                    throw e
+                        .push(syscall->begin(), "syscall '" + sc_name + "'")
+                        .push(rule->begin(), "rule '" + action_str + "'")
+                        .push(policy_stmt->begin(), "policy '" + policy_name + "'")
+                        .build(prog->filename());
+                }
 
                 auto & nr = entry.nr;
                 auto & overloads = entry.overloads;
@@ -130,7 +174,19 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
                     );
                 }
 
-                std::shared_ptr<syntax::Expr> evaluated_condition = scope->evaluate(condition);
+                std::shared_ptr<syntax::Expr> evaluated_condition;
+
+                try {
+                    evaluated_condition = scope->evaluate(condition);
+                }
+                catch (CompilerError& e) {
+                    throw e
+                        .push(condition->begin(), "syscall condition")
+                        .push(syscall->begin(), "syscall '" + sc_name + "'")
+                        .push(rule->begin(), "rule '" + rule->action()->to_string() + "'")
+                        .push(policy_stmt->begin(), "policy '" + policy_name + "'")
+                        .build(prog->filename());
+                }
 
                 syscall_rules->push_back({
                     evaluated_condition,
@@ -142,5 +198,5 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
         }
     }
 
-    return std::make_unique<AnalysisResult>(policies, global_scope);
+    return std::make_unique<AnalysisResult>(prog->filename(), policies, global_scope);
 }

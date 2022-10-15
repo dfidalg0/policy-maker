@@ -1,5 +1,5 @@
 policy main {
     allow {
-        read if :invalid
+        read if 2 + (1 + :invalid)
     }
 }

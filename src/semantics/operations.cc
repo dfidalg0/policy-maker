@@ -1,5 +1,5 @@
 #include <semantics/operations.hh>
-#include <stdexcept>
+#include <errors.hh>
 
 // int-int operators
 int add(int a, int b) {
@@ -153,39 +153,39 @@ std::string add(std::string a, std::string b) {
 }
 
 std::string subtract(std::string a, std::string b) {
-    throw std::runtime_error("Cannot subtract strings");
+    throw CompilerError("Cannot subtract strings");
 }
 
 std::string multiply(std::string a, std::string b) {
-    throw std::runtime_error("Cannot multiply strings");
+    throw CompilerError("Cannot multiply strings");
 }
 
 std::string divide(std::string a, std::string b) {
-    throw std::runtime_error("Cannot divide strings");
+    throw CompilerError("Cannot divide strings");
 }
 
 std::string modulo(std::string a, std::string b) {
-    throw std::runtime_error("Cannot modulo strings");
+    throw CompilerError("Cannot modulo strings");
 }
 
 std::string bit_and(std::string a, std::string b) {
-    throw std::runtime_error("Cannot bitwise-and strings");
+    throw CompilerError("Cannot bitwise-and strings");
 }
 
 std::string bit_or(std::string a, std::string b) {
-    throw std::runtime_error("Cannot bitwise-or strings");
+    throw CompilerError("Cannot bitwise-or strings");
 }
 
 std::string bit_xor(std::string a, std::string b) {
-    throw std::runtime_error("Cannot bitwise-xor strings");
+    throw CompilerError("Cannot bitwise-xor strings");
 }
 
 std::string bit_lsh(std::string a, std::string b) {
-    throw std::runtime_error("Cannot bitwise-left-shift strings");
+    throw CompilerError("Cannot bitwise-left-shift strings");
 }
 
 std::string bit_rsh(std::string a, std::string b) {
-    throw std::runtime_error("Cannot bitwise-right-shift strings");
+    throw CompilerError("Cannot bitwise-right-shift strings");
 }
 
 bool equal(std::string a, std::string b) {
