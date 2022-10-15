@@ -231,7 +231,7 @@ policy_body:
     }
     | policy_body[body] rule {
         $$ = $body;
-        $1->push_back(std::shared_ptr<syntax::Rule>($rule));
+        $$->push_back(std::shared_ptr<syntax::Rule>($rule));
     }
 
 token_param_action: ERROR | TRAP | TRACE
@@ -496,9 +496,9 @@ function_call:
 
 token_keyword: IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG | TRUE | FALSE | NIL | FUNCTION | POLICY_DECL_OR
 
-soft_keyword: token_keyword {
-    $$ = new Token(yytokentype::IDENTIFIER, $1->begin(), $1->end(), $1->text());
-    delete $1;
+soft_keyword: token_keyword[token] {
+    $$ = new Token(yytokentype::IDENTIFIER, $token->begin(), $token->end(), $token->text());
+    delete $token;
 }
 %%
 YYERROR_DECL {
