@@ -43,6 +43,11 @@
     extern "C" void yyset_in(FILE *, void *);
 }
 
+%code top {
+    #include <filesystem>
+    namespace fs = std::filesystem;
+}
+
 %define parse.error detailed
 
 %union {
@@ -166,21 +171,36 @@ stmt_list:
 
 stmt: policy_decl | function_decl | variable_decl | import_stmt
 
-import_stmt: FROM STRING[module] IMPORT import_list[args] SEMI {
-    $$ = new syntax::ImportStmt(
-        $module->text().substr(1, $module->text().size() - 2),
-        std::shared_ptr<syntax::ImportList>($args),
-        $FROM->begin(),
-        $SEMI->end()
-    );
-}
+import_stmt:
+    FROM STRING[module] IMPORT import_list[args] SEMI {
+        $$ = new syntax::ImportStmt(
+            $module->text().substr(1, $module->text().size() - 2),
+            std::shared_ptr<syntax::ImportList>($args),
+            $FROM->begin(),
+            $SEMI->end()
+        );
+    }
+    | FROM STRING[module] IMPORT LPAREN import_list[args] RPAREN SEMI {
+        $$ = new syntax::ImportStmt(
+            $module->text().substr(1, $module->text().size() - 2),
+            std::shared_ptr<syntax::ImportList>($args),
+            $FROM->begin(),
+            $SEMI->end()
+        );
+    }
 
 import_arg:
     IDENTIFIER[name] {
-        $$ = new syntax::ImportArg($name->text(), $name->begin(), $name->end());
+        $$ = syntax::ImportArg::Symbol($name->text(), $name->begin(), $name->end());
     }
     | IDENTIFIER[name] AS IDENTIFIER[alias] {
-        $$ = new syntax::ImportArg($name->text(), $alias->text(), $name->begin(), $alias->end());
+        $$ = syntax::ImportArg::Symbol($name->text(), $alias->text(), $name->begin(), $alias->end());
+    }
+    | POLICY IDENTIFIER[name] {
+        $$ = syntax::ImportArg::Policy($name->text(), $POLICY->begin(), $name->end());
+    }
+    | POLICY IDENTIFIER[name] AS IDENTIFIER[alias] {
+        $$ = syntax::ImportArg::Policy($name->text(), $alias->text(), $POLICY->begin(), $alias->end());
     }
 
 import_list:
@@ -547,6 +567,8 @@ YYERROR_DECL {
 }
 
 std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {
+    filename = fs::absolute(filename).string();
+
     auto file = fopen(filename.c_str(), "r");
 
     if (!file) {

@@ -3,11 +3,14 @@
 #include <syntax/nodes/variable_decl.hh>
 #include <parser.yy.hh>
 #include <errors.hh>
+#include <filesystem>
 #include <set>
 
 #include <syscalls.hh>
 
 using namespace semantics;
+
+namespace fs = std::filesystem;
 
 struct SyscallParamWithIndex {
     uint index;
@@ -40,19 +43,95 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
 }
 
 std::unique_ptr<AnalysisResult> semantics::analyze(std::string filename) {
-    auto prog = syntax::parse(filename).get();
-    return analyze(prog);
+    auto prog = syntax::parse(filename).release();
+    auto ar = analyze(prog);
+    delete prog;
+    return ar;
 }
 
 std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
     // Primeiro, definimos o escopo global
     auto global_scope = std::make_shared<semantics::Scope>();
 
+    auto file = fs::path(prog->filename());
+    auto dir = file.parent_path();
+
     using kind = syntax::Node::Kind;
+
+    auto policies = std::make_shared<semantics::Policies>();
+
+    auto add_policy = [&policies] (std::string name, std::shared_ptr<semantics::Policy> policy) {
+        auto it = policies->find(name);
+
+        if (it != policies->end()) {
+            throw CompilerError("Policy " + name + " already defined");
+        }
+
+        policies->insert({name, policy});
+    };
 
     for (auto stmt : prog->stmts()) {
         // E o atualizamos com as declarações globais
         switch (stmt->kind()) {
+            case kind::import_stmt: {
+                auto import = std::static_pointer_cast<syntax::ImportStmt>(stmt);
+
+                auto path = fs::weakly_canonical(dir / import->module());
+
+                if (!fs::exists(path)) {
+                    throw CompilerError("Module not found: " + import->module())
+                        .push(import->begin(), "import statement")
+                        .build(file);
+                }
+
+                auto ar = analyze(path.string());
+                auto mod_policies = ar->policies();
+                auto mod_scope = ar->scope();
+
+                for (auto &arg: import->imports()) {
+                    if (arg->is_policy()) {
+                        auto pol_it = mod_policies->find(arg->name());
+
+                        if (pol_it == mod_policies->end()) {
+                            throw CompilerError("Policy not found: " + arg->name())
+                                .push(arg->begin(), "import argument")
+                                .push(import->begin(), "import statement")
+                                .build(file);
+                        }
+
+                        try {
+                            add_policy(arg->alias(), pol_it->second);
+                            continue;
+                        } catch (CompilerError &e) {
+                            throw e
+                                .push(arg->begin(), "import argument")
+                                .push(import->begin(), "import statement")
+                                .build(file);
+                        }
+                    }
+
+                    auto symbol = mod_scope->find(arg->name());
+
+                    if (!symbol) {
+                        throw CompilerError("Symbol not found: " + arg->name())
+                            .push(arg->begin(), "import argument")
+                            .push(import->begin(), "import statement")
+                            .build(file);
+                    }
+
+                    try {
+                        global_scope->add(arg->alias(), symbol);
+                    }
+                    catch (CompilerError &e) {
+                        throw e
+                            .push(arg->begin(), "import argument")
+                            .push(import->begin(), "import statement")
+                            .build(file);
+                    }
+                }
+
+                break;
+            }
             case kind::function_decl: {
                 auto func_decl = std::static_pointer_cast<syntax::FunctionDecl>(stmt);
 
@@ -106,8 +185,6 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
         }
     }
 
-    auto policies = std::make_shared<semantics::Policies>();
-
     for (auto stmt : prog->stmts()) {
         if (stmt->kind() != kind::policy) continue;
 
@@ -122,7 +199,14 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
             policy_stmt->default_action()
         );
 
-        policies->insert({policy_name, policy});
+        try {
+            add_policy(policy_name, policy);
+        }
+        catch (CompilerError& e) {
+            throw e
+                .push(policy_stmt->begin(), "policy declaration")
+                .build(file);
+        }
 
         for (auto &rule : rules) {
             for (auto &syscall : rule->syscalls()) {

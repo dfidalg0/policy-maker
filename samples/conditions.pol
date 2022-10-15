@@ -1,8 +1,8 @@
-from './basic.pol' import other, main as test;
+from './functions.pol' import STDOUT;
 
 policy main {
     allow {
-        write if :fd == 1 && :count < 28,
+        write if :fd == STDOUT && :count < 28,
         exit_group
     }
 }

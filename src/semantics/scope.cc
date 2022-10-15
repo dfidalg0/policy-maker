@@ -135,11 +135,17 @@ static std::unique_ptr<Constant> operate(Constant *a, BinaryExpr::OpKind op, Con
 Scope& Scope::add(std::shared_ptr<Symbol> symbol) {
     auto name = symbol->name();
 
+    add(name, symbol);
+
+    return *this;
+}
+
+Scope& Scope::add(const std::string& name, std::shared_ptr<Symbol> symbol) {
     if (_symbols.find(name) != _symbols.end()) {
         throw CompilerError("Symbol already defined: " + name);
     }
 
-    _symbols[symbol->name()] = symbol;
+    _symbols[name] = symbol;
     return *this;
 }
 

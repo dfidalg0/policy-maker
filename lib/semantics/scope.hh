@@ -14,6 +14,7 @@ namespace semantics {
     public:
         Scope(std::shared_ptr<Scope> parent = nullptr) : _parent(parent){};
 
+        Scope& add(const std::string& name, std::shared_ptr<Symbol> symbol);
         Scope& add(std::shared_ptr<Symbol> symbol);
         std::shared_ptr<Symbol> find(std::string name);
 
