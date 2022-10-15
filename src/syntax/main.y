@@ -58,6 +58,8 @@
     syntax::Expr * expr;
     syntax::ExprList * expr_list;
     std::vector<std::string> * args_list;
+    syntax::ImportArg * import_arg;
+    syntax::ImportList * import_list;
 }
 
 %define api.pure full
@@ -74,6 +76,8 @@
 %token <token>
     // Basics
     YYEOF POLICY IDENTIFIER SYSCALL_PARAM POLICY_DECL_OR
+    // Import statements
+    IMPORT AS FROM
     // Delimiters
     LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK ARROW
     // Actions
@@ -113,7 +117,10 @@
 
 %type<rule_list> policy_body
 
-%type<stmt> stmt policy_decl function_decl variable_decl
+%type<stmt> stmt policy_decl function_decl variable_decl import_stmt
+
+%type<import_list> import_list
+%type<import_arg> import_arg
 
 %type<stmt_list> stmt_list
 
@@ -157,7 +164,34 @@ stmt_list:
         $$->push_back(std::shared_ptr<syntax::Stmt>($current));
     }
 
-stmt: policy_decl | function_decl | variable_decl
+stmt: policy_decl | function_decl | variable_decl | import_stmt
+
+import_stmt: FROM STRING[module] IMPORT import_list[args] SEMI {
+    $$ = new syntax::ImportStmt(
+        $module->text().substr(1, $module->text().size() - 2),
+        std::shared_ptr<syntax::ImportList>($args),
+        $FROM->begin(),
+        $SEMI->end()
+    );
+}
+
+import_arg:
+    IDENTIFIER[name] {
+        $$ = new syntax::ImportArg($name->text(), $name->begin(), $name->end());
+    }
+    | IDENTIFIER[name] AS IDENTIFIER[alias] {
+        $$ = new syntax::ImportArg($name->text(), $alias->text(), $name->begin(), $alias->end());
+    }
+
+import_list:
+    import_arg[arg] {
+        $$ = new syntax::ImportList();
+        $$->push_back(std::shared_ptr<syntax::ImportArg>($arg));
+    }
+    | import_list[list] COMMA import_arg[arg] {
+        $$ = $list;
+        $$->push_back(std::shared_ptr<syntax::ImportArg>($arg));
+    }
 
 variable_decl: IDENTIFIER[name] ASSIGN expr[value] SEMI {
     $$ = new syntax::VariableDecl(
@@ -494,7 +528,10 @@ function_call:
         );
     }
 
-token_keyword: IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG | TRUE | FALSE | NIL | FUNCTION | POLICY_DECL_OR
+token_keyword:
+    IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG |
+    TRUE | FALSE | NIL | FUNCTION | POLICY_DECL_OR |
+    IMPORT | AS | FROM
 
 soft_keyword: token_keyword[token] {
     $$ = new Token(yytokentype::IDENTIFIER, $token->begin(), $token->end(), $token->text());

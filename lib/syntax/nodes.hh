@@ -8,9 +8,11 @@
 #include "nodes/action.hh"
 #include "nodes/rule.hh"
 #include "nodes/syscall.hh"
+#include "nodes/import_arg.hh"
 // Statements
 #include "nodes/function_decl.hh"
 #include "nodes/policy.hh"
+#include "nodes/import_stmt.hh"
 // Expressions
 #include "nodes/binary_expr.hh"
 #include "nodes/constant.hh"

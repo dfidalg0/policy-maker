@@ -39,6 +39,9 @@ str           "([^"]|\\")*"|'([^']|\\')*'
 <M_COM>\n   { ++ctx->line_start; ctx->col_start = 1; }
 <M_COM>.    { ++ctx->col_start; }
 
+import      { MAKE_TOKEN(IMPORT); }
+from        { MAKE_TOKEN(FROM); }
+as          { MAKE_TOKEN(AS); }
 policy      { MAKE_TOKEN(POLICY); }
 terminate   { MAKE_TOKEN(TERMINATE); }
 allow       { MAKE_TOKEN(ALLOW); }

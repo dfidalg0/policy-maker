@@ -15,10 +15,12 @@ namespace syntax {
             action,
             syscall,
             rule,
+            import_arg,
             // Statements
             policy,
             function_decl,
             variable_decl,
+            import_stmt,
             // Expressions
             unary_expr,
             binary_expr,

@@ -1,3 +1,5 @@
+from './basic.pol' import other, main as test;
+
 policy main {
     allow {
         write if :fd == 1 && :count < 28,
