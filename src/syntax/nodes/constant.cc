@@ -20,8 +20,25 @@ Constant::~Constant() {
 
 void Constant::print(uint level) {
     std::cout << indent(level) << "> Constant: \n";
-    std::cout << indent(level + 2) << "- Type: " << type_to_string(_type) << std::endl;
-    std::cout << indent(level + 2) << "- Value: " << _value << std::endl;
+    std::cout << indent(level + 2) << "- Type: " << type_to_string(_type) << '\n';
+    std::cout << indent(level + 2) << "- Value: ";
+
+    switch (_type) {
+        case Type::integer:
+            std::cout << *(int *) _value;
+            break;
+        case Type::string:
+            std::cout << *(std::string *) _value;
+            break;
+        case Type::boolean:
+            std::cout << *(bool *) _value;
+            break;
+        case Type::null:
+            std::cout << "null";
+            break;
+    }
+
+    std::cout << '\n';
 }
 
 std::string Constant::type_to_string(Type type) {
