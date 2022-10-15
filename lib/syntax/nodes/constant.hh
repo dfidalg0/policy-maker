@@ -4,7 +4,7 @@
 #include "_expr.hh"
 
 namespace syntax {
-    class Constant : public syntax::Expr {
+    class Constant : public Expr {
     public:
         enum class Type {
             integer,
@@ -18,49 +18,48 @@ namespace syntax {
         bool is_truthy();
 
     private:
-        std::string _value;
+        Constant(
+            Type type,
+            void * value,
+            Position begin = Position(0, 0),
+            Position end = Position(0, 0)
+        ) : Expr(Node::Kind::constant, begin, end), _type(type), _value(value) {}
+
+        void * _value;
         Type _type;
 
     public:
         Constant(
-            Type type,
-            std::string value,
-            Position begin = Position(0, 0),
-            Position end = Position(0, 0)
-        ) : syntax::Expr(Node::Kind::constant, begin, end), _type(type), _value(value) {}
-
-        Constant(
             char const * value,
             Position begin = Position(0, 0),
             Position end = Position(0, 0)
-        ) : Constant(Type::string, value, begin, end) {}
+        ) : Constant(Type::string, new std::string(value), begin, end) {}
 
         Constant(
             std::string value,
             Position begin = Position(0, 0),
             Position end = Position(0, 0)
-        ) : Constant(Type::string, value, begin, end) {}
+        ) : Constant(Type::string, new std::string(value), begin, end) {}
 
         Constant(
             int value,
             Position begin = Position(0, 0),
             Position end = Position(0, 0)
-        ) : Constant(Type::integer, std::to_string(value), begin, end) {}
+        ) : Constant(Type::integer, new int(value), begin, end) {}
 
         Constant(
             bool value,
             Position begin = Position(0, 0),
             Position end = Position(0, 0)
-        ) : Constant(Type::boolean, value ? "true" : "false", begin, end) {}
+        ) : Constant(Type::boolean, new bool(value), begin, end) {}
 
         Constant(
             Position begin = Position(0, 0),
             Position end = Position(0, 0)
-        ) : Constant(Type::null, "null", begin, end) {}
+        ) : Constant(Type::null, nullptr , begin, end) {}
 
-        ~Constant() {}
+        virtual ~Constant();
 
-        inline std::string value() const { return _value; }
         inline Type type() const { return _type; }
 
         void print(uint level = 0) override;

@@ -2,6 +2,22 @@
 
 using namespace syntax;
 
+Constant::~Constant() {
+    switch (_type) {
+        case Type::integer:
+            delete (int *) _value;
+            break;
+        case Type::string:
+            delete (std::string *) _value;
+            break;
+        case Type::boolean:
+            delete (bool *) _value;
+            break;
+        case Type::null:
+            break;
+    }
+}
+
 void Constant::print(uint level) {
     std::cout << indent(level) << "> Constant: \n";
     std::cout << indent(level + 2) << "- Type: " << type_to_string(_type) << std::endl;
@@ -19,52 +35,33 @@ std::string Constant::type_to_string(Type type) {
 }
 
 Constant::operator int() {
-    if (_type == Type::boolean) {
-        return (int) (bool) *this;
-    }
-
-    if (_type == Type::null) {
-        return 0;
-    }
-
-    try {
-        return std::stoi(_value);
-    }
-    catch (std::invalid_argument) {
-        throw std::runtime_error("Cannot convert string to integer");
+    switch (_type) {
+        case Type::integer: return *(int *) _value;
+        case Type::string: return std::stoi((std::string) * this);
+        case Type::boolean: return (int) (bool) * this;
+        case Type::null: return 0;
+        default: throw std::runtime_error("Never reached");
     }
 }
 
 Constant::operator std::string() {
-    if (_type == Type::boolean) {
-        return ((bool) *this) ? "true" : "false";
+    switch (_type) {
+        case Type::string: return *(std::string *) _value;
+        case Type::integer: return std::to_string((int) *this);
+        case Type::boolean: return (bool) *this ? "true" : "false";
+        case Type::null: return "null";
+        default: throw std::runtime_error("Never reached");
     }
-
-    if (_type == Type::integer) {
-        return std::to_string((int) *this);
-    }
-
-    if (_type == Type::null) {
-        return "null";
-    }
-
-    return _value;
 }
 
 Constant::operator bool() {
-    if (_type == Type::integer) {
-        return (bool) (int) *this;
+    switch (_type) {
+        case Type::boolean: return *(bool *) _value;
+        case Type::integer: return (bool) (int) *this;
+        case Type::string: return (std::string) *this != "";
+        case Type::null: return false;
+        default: throw std::runtime_error("Never reached");
     }
-
-    if (_type == Type::string) {
-        return !this->value().empty();
-    }
-
-    if (_type == Type::null) {
-        return false;
-    }
-
-    return _value == "true" || _value == "1";
 }
 
 bool Constant::is_truthy() {

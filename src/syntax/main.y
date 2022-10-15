@@ -434,32 +434,27 @@ boolean: TRUE | FALSE
 constant:
     INTEGER[value] {
         $$ = new syntax::Constant(
-            syntax::Constant::Type::integer,
-            $value->text(),
+            std::stoi($value->text()),
             $value->begin(),
             $value->end()
         );
     }
     | STRING[value] {
         $$ = new syntax::Constant(
-            syntax::Constant::Type::string,
-            $value->text(),
+            $value->text().substr(1, $value->text().size() - 2),
             $value->begin(),
             $value->end()
         );
     }
     | boolean[value] {
         $$ = new syntax::Constant(
-            syntax::Constant::Type::boolean,
-            $value->text(),
+            $value->text() == "true",
             $value->begin(),
             $value->end()
         );
     }
     | NIL[value] {
         $$ = new syntax::Constant(
-            syntax::Constant::Type::null,
-            $value->text(),
             $value->begin(),
             $value->end()
         );
