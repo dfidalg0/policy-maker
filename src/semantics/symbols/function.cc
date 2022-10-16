@@ -24,8 +24,7 @@ Function::Function(
     }
     catch (CompilerError& e) {
         throw e
-            .push(_body->begin(), "function body")
-            .push(decl->begin(), "function declaration");
+            .push(_body->begin(), "function body");
     }
 }
 
