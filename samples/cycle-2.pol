@@ -1,0 +1,1 @@
+from './cycle-3.pol' import test3;
