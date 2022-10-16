@@ -506,11 +506,12 @@ std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<semanti
     std::vector<SyscallRulesWithNumber> rules_list;
     std::vector<SyscallRulesWithNumber> result;
 
+    rules_list.reserve(n);
+    result.reserve(n);
+
     for (auto [nr, sc_rules] : *rules) {
         rules_list.push_back({nr, sc_rules});
     }
-
-    result.reserve(n);
 
     queue.push({0, n});
 
