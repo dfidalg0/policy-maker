@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <set>
 
 namespace semantics {
     typedef std::vector<std::pair<std::shared_ptr<syntax::Expr>, std::shared_ptr<syntax::Action>>> SyscallRules;
@@ -50,8 +51,8 @@ namespace semantics {
         std::string _filename;
     };
 
-    std::unique_ptr<AnalysisResult> analyze(std::string filename);
-    std::unique_ptr<AnalysisResult> analyze(syntax::Program *prog);
+    std::unique_ptr<AnalysisResult> analyze(std::string filename, std::set<std::string> referrers = std::set<std::string>());
+    std::unique_ptr<AnalysisResult> analyze(syntax::Program *prog, std::set<std::string> referrers = std::set<std::string>());
 };
 
 #endif // __SEMANTICS_MAIN_HH__

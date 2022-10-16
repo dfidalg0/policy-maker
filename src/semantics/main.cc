@@ -42,18 +42,26 @@ static std::vector<SyscallParamWithIndex> merge_overloads(gen::SyscallOverloads 
     return params;
 }
 
-std::unique_ptr<AnalysisResult> semantics::analyze(std::string filename) {
+std::unique_ptr<AnalysisResult> semantics::analyze(std::string filename, std::set<std::string> referrers) {
     auto prog = syntax::parse(filename).release();
-    auto ar = analyze(prog);
+    auto ar = analyze(prog, referrers);
     delete prog;
     return ar;
 }
 
-std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
+std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::set<std::string> referrers) {
     // Primeiro, definimos o escopo global
     auto global_scope = std::make_shared<semantics::Scope>();
 
-    auto file = fs::path(prog->filename());
+    auto filename = prog->filename();
+
+    if (referrers.find(filename) != referrers.end()) {
+        throw CompilerError("Cyclic reference to file " + filename);
+    }
+
+    referrers.insert(filename);
+
+    auto file = fs::path(filename);
     auto dir = file.parent_path();
 
     using kind = syntax::Node::Kind;
@@ -84,7 +92,17 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog) {
                         .build(file);
                 }
 
-                auto ar = analyze(path.string());
+                std::unique_ptr<AnalysisResult> ar = nullptr;
+
+                try {
+                    ar = analyze(path.string(), referrers);
+                }
+                catch (CompilerError &e) {
+                    throw e
+                        .push(import->begin(), "import statement")
+                        .build(file);
+                }
+
                 auto mod_policies = ar->policies();
                 auto mod_scope = ar->scope();
 
