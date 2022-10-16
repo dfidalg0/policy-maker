@@ -7,6 +7,21 @@
 #include <sstream>
 #include <errors.hh>
 
+#include <linux/audit.h>
+
+constexpr auto ARCH =
+#if defined(__i386__)
+    AUDIT_ARCH_I386;
+#elif defined(__x86_64__)
+    AUDIT_ARCH_X86_64;
+#elif defined(__arm__)
+    AUDIT_ARCH_ARM;
+#elif defined(__aarch64__)
+    AUDIT_ARCH_AARCH64;
+#else
+#error "Unsupported architecture"
+#endif
+
 
 // Tipos auxiliares
 struct SyscallRulesWithNumber {
@@ -197,10 +212,30 @@ CompileResult::CompileResult(semantics::AnalysisResult * ar, std::string entry) 
         position_map[i] = pos;
     }
 
-    // Por fim (ou início), vamos fazer o carregamento do número da syscall
-    // no acumulador
+    // Agora, vamos fazer o carregamento do número da syscall no acumulador
+    // para a verificação pelos nossos filtros
     _filter->push_back(
         BPF_STMT(BPF_LD | BPF_W | BPF_ABS, SECCOMP_DATA(nr))
+    );
+
+    // Verificação da arquitetura
+
+    // Primeiro, colocamos o destino final da arquitetura inválida:
+    // o término do programa
+    _filter->push_back(
+        BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_KILL_PROCESS)
+    );
+
+    // Agora, vamos verificar se a arquitetura é válida. Se for, vamos
+    // pular para a instrução de carregamento do número da syscall. Caso
+    // contrário, vamos pular para o destino final definido acima
+    _filter->push_back(
+        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, ARCH, 1, 0)
+    );
+
+    // Por fim (ou início), vamos carregar a arquitetura atual no acumulador
+    _filter->push_back(
+        BPF_STMT(BPF_LD | BPF_W | BPF_ABS, SECCOMP_DATA(arch))
     );
 
     std::reverse(_filter->begin(), _filter->end());

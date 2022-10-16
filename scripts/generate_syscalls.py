@@ -17,12 +17,16 @@ def main():
 
 #include <errors.hh>
 
-# ifdef __i386__
-#  include "syscalls/x86_32.hh"
-# elif defined(__ILP32__)
-#  include "syscalls/x86_x32.hh"
-# else
+# if defined(__i386__)
+#  include "syscalls/i386.hh"
+# elif defined(__x86_64__)
 #  include "syscalls/x86_64.hh"
+# elif defined(__arm__)
+#  include "syscalls/arm.hh"
+# elif defined(__aarch64__)
+#  include "syscalls/aarch64.hh"
+# else
+#  error "Unsupported architecture"
 # endif
 
 gen::SyscallEntry get_syscall_entry(const std::string &name) {
@@ -32,7 +36,7 @@ gen::SyscallEntry get_syscall_entry(const std::string &name) {
         try {
             auto nr = std::stoi(name);
             return gen::SyscallEntry({
-                .nr = nr,
+                .nr = nr | __SYSCALL_BIT,
                 .overloads = gen::SyscallOverloads(),
             });
         }
@@ -77,6 +81,12 @@ def generate_arch_syscalls(arch: str):
 #include <string>
 #include <vector>
 
+# if defined(__ILP32__) && defined(__x86_64__)
+#  define __SYSCALL_BIT 0x40000000
+# else
+#  define __SYSCALL_BIT 0
+# endif
+
 namespace gen {
     struct SyscallParam {
         std::string name;
@@ -116,7 +126,7 @@ std::unordered_map<std::string, gen::SyscallEntry> syscalls = {
 
                 writer.write(
                     '''    {"%s", gen::SyscallEntry({
-        .nr = %d,
+        .nr = %d | __SYSCALL_BIT,
         .overloads = gen::SyscallOverloads({\n''' %
                     ( name, nr )
                 )

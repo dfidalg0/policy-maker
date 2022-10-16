@@ -1,7 +1,7 @@
 INPUTS := $(shell find src -name '*.cc')
 HEADERS := $(shell find lib -name '*.hh')
 
-ARCH ?= x86_64
+ARCH := $(shell uname -m)
 
 all: compiler
 
@@ -30,7 +30,7 @@ bin:
 	mkdir bin
 
 bin/compiler: lexer parser syscalls $(INPUTS) $(HEADERS) | bin
-	g++ -lfl -I lib -I target --std=c++17 $(INPUTS) target/*.cc -o bin/compiler
+	g++ -s -lfl -I lib -I target --std=c++17 $(INPUTS) target/*.cc -o bin/compiler
 
 clean:
 	rm -rf bin target
