@@ -1,0 +1,14 @@
+policy allow_exit {
+    allow {
+        exit,
+        exit_group,
+    }
+}
+
+policy main {
+    apply allow_exit;
+
+    allow {
+        write if :fd == 1,
+    }
+}

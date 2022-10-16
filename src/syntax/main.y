@@ -61,14 +61,14 @@
     syntax::Syscall * syscall;
     syntax::SyscallsList * syscall_list;
     syntax::Rule * rule;
-    syntax::RulesList * rule_list;
     syntax::Stmt * stmt;
-    std::vector<std::shared_ptr<syntax::Stmt>> * stmt_list;
+    syntax::StmtList * stmt_list;
     syntax::Expr * expr;
     syntax::ExprList * expr_list;
     std::vector<std::string> * args_list;
     syntax::ImportArg * import_arg;
     syntax::ImportList * import_list;
+    syntax::Apply * apply;
 }
 
 %define api.pure full
@@ -92,7 +92,7 @@
     // Actions
     ALLOW KILL TRAP ERROR NOTIFY TRACE LOG TERMINATE
     // Keywords
-    IF FUNCTION
+    IF FUNCTION APPLY
     // Separators
     COMMA SEMI
     // Binary operators
@@ -124,7 +124,9 @@
 
 %type<rule> rule
 
-%type<rule_list> policy_body
+%type<stmt_list> policy_body
+
+%type<apply> apply
 
 %type<stmt> stmt policy_decl function_decl variable_decl import_stmt
 
@@ -149,7 +151,7 @@
 
 %%
 program: stmt_list[stmts] YYEOF {
-    auto stmts = std::shared_ptr<std::vector<std::shared_ptr<syntax::Stmt>>>($stmts);
+    auto stmts = std::shared_ptr<syntax::StmtList>($stmts);
 
     if ($stmts->empty()) {
         $$ = new syntax::Program(filename, stmts, { 1, 1 }, { 1, 1 });
@@ -166,7 +168,7 @@ program: stmt_list[stmts] YYEOF {
 
 stmt_list:
     %empty {
-        $$ = new std::vector<std::shared_ptr<syntax::Stmt>>();
+        $$ = new syntax::StmtList();
     }
     | stmt_list[list] stmt[current] {
         $$ = $list;
@@ -267,7 +269,7 @@ policy_decl:
     POLICY IDENTIFIER[name] action POLICY_DECL_OR LBRACE policy_body[body] RBRACE {
         auto begin = $POLICY->begin();
         auto end = $RBRACE->end();
-        auto body = std::shared_ptr<syntax::RulesList>($body);
+        auto body = std::shared_ptr<syntax::StmtList>($body);
         auto name = $name->text();
         auto action = std::shared_ptr<syntax::Action>($action);
         $$ = new syntax::Policy(name, body, action, begin, end);
@@ -276,7 +278,7 @@ policy_decl:
         auto begin = $POLICY->begin();
         auto end = $RBRACE->end();
         auto name = $name->text();
-        auto body = std::shared_ptr<syntax::RulesList>($body);
+        auto body = std::shared_ptr<syntax::StmtList>($body);
         auto action = std::make_shared<syntax::Action>(
             syntax::Action::Kind::error, EPERM, begin, end
         );
@@ -285,12 +287,20 @@ policy_decl:
 
 policy_body:
     %empty {
-        $$ = new std::vector<std::shared_ptr<syntax::Rule>>();
+        $$ = new syntax::StmtList();
     }
     | policy_body[body] rule {
         $$ = $body;
         $$->push_back(std::shared_ptr<syntax::Rule>($rule));
     }
+    | policy_body[body] apply {
+        $$ = $body;
+        $$->push_back(std::shared_ptr<syntax::Apply>($apply));
+    }
+
+apply: APPLY IDENTIFIER[policy] SEMI {
+    $$ = new syntax::Apply($policy->text(), $APPLY->begin(), $SEMI->end());
+}
 
 token_param_action: ERROR | TRAP | TRACE
 
@@ -555,7 +565,7 @@ function_call:
 token_keyword:
     IF | ALLOW | KILL | TRAP | ERROR | NOTIFY | TRACE | LOG |
     TRUE | FALSE | NIL | FUNCTION | POLICY_DECL_OR |
-    IMPORT | AS | FROM
+    IMPORT | AS | FROM | APPLY
 
 soft_keyword: token_keyword[token] {
     $$ = new Token(yytokentype::IDENTIFIER, $token->begin(), $token->end(), $token->text());

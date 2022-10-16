@@ -21,6 +21,7 @@ namespace syntax {
             function_decl,
             variable_decl,
             import_stmt,
+            apply,
             // Expressions
             unary_expr,
             binary_expr,

@@ -1,6 +1,7 @@
-// Essa política permite a execução de programas básicos em NodeJS em modo não
-// interativo.
-
+/*
+ * Essa política permite a execução de programas básicos em NodeJS em modo não
+ * interativo.
+ */
 policy main {
     allow {
         execve,
@@ -45,5 +46,17 @@ policy main {
         dup3,
         exit,
         exit_group,
+    }
+}
+
+/**
+ * Esta política permite a execução do NodeJS em modo interativo.
+ */
+policy interactive {
+    apply main;
+
+    allow {
+        uname,
+        pwrite64,
     }
 }

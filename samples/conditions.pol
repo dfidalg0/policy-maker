@@ -1,8 +1,12 @@
 from './functions.pol' import STDOUT;
+from './composition.pol' import policy allow_exit;
+
+CODE_COMPILED_SUCCESS_MSG_LENGTH = 27;
 
 policy main {
+    apply allow_exit;
+
     allow {
-        write if :fd == STDOUT && :count < 28,
-        exit_group
+        write if :fd == STDOUT && :count <= CODE_COMPILED_SUCCESS_MSG_LENGTH
     }
 }

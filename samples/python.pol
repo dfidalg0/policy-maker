@@ -1,6 +1,7 @@
-// Essa política permite a execução de programas básicos em Python 3 em modo não
-// interativo.
-
+/**
+ * Essa política permite a execução de programas básicos em Python 3 em modo não
+ * interativo.
+ */
 policy main {
     allow {
         access,
@@ -36,5 +37,21 @@ policy main {
         set_tid_address,
         sysinfo,
         write,
+    }
+}
+
+
+/**
+ * Esta política permite a execução do Python em modo interativo.
+ */
+policy interactive {
+    apply main;
+
+    allow {
+        pselect6,
+        rt_sigprocmask,
+        getpid,
+        rename,
+        chown,
     }
 }

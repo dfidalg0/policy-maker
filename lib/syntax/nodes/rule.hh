@@ -1,7 +1,7 @@
 #ifndef __SYNTAX_NODES_RULE_HH__
 #define __SYNTAX_NODES_RULE_HH__
 
-#include "_node.hh"
+#include "_stmt.hh"
 #include "action.hh"
 #include "syscall.hh"
 #include <vector>
@@ -10,7 +10,7 @@
 namespace syntax {
     typedef std::vector<std::shared_ptr<Syscall>> SyscallsList;
 
-    class Rule : public Node {
+    class Rule : public Stmt {
     private:
         std::shared_ptr<Action> _action;
         std::shared_ptr<SyscallsList> _syscalls;
@@ -21,7 +21,7 @@ namespace syntax {
             std::shared_ptr<SyscallsList> syscalls,
             Position begin = Position(0, 0),
             Position end = Position(0, 0)
-        ) : Node(Node::Kind::rule, begin, end), _action(action), _syscalls(syscalls) {}
+        ) : Stmt(Node::Kind::rule, begin, end), _action(action), _syscalls(syscalls) {}
 
         inline std::shared_ptr<Action> action() const { return _action; }
         inline SyscallsList syscalls() { return *_syscalls; }

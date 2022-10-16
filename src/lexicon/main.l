@@ -52,6 +52,7 @@ notify      { MAKE_TOKEN(NOTIFY); }
 trace       { MAKE_TOKEN(TRACE); }
 log         { MAKE_TOKEN(LOG); }
 fn          { MAKE_TOKEN(FUNCTION); }
+apply       { MAKE_TOKEN(APPLY); }
 
 true        { MAKE_TOKEN(TRUE); }
 false       { MAKE_TOKEN(FALSE); }

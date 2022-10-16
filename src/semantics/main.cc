@@ -159,7 +159,9 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
                     global_scope->add(func);
                 }
                 catch (CompilerError& e) {
-                    throw e.build(prog->filename());
+                    throw e
+                        .push(func_decl->begin(), "function declaration")
+                        .build(file);
                 }
                 break;
             }
@@ -208,7 +210,7 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
 
         auto policy_stmt = std::static_pointer_cast<syntax::Policy>(stmt);
         auto policy_name = policy_stmt->name();
-        auto rules = policy_stmt->rules();
+        auto body = policy_stmt->body();
 
         auto policy_rules = std::make_shared<semantics::PolicyRules>();
 
@@ -226,76 +228,108 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
                 .build(file);
         }
 
-        for (auto &rule : rules) {
-            for (auto &syscall : rule->syscalls()) {
-                auto sc_name = syscall->name();
-                auto condition = syscall->condition();
+        for (auto stmt: body) {
+            switch (stmt->kind()) {
+                case kind::rule: {
+                    auto rule = std::static_pointer_cast<syntax::Rule>(stmt);
 
-                gen::SyscallEntry entry;
+                    for (auto &syscall : rule->syscalls()) {
+                        auto sc_name = syscall->name();
+                        auto condition = syscall->condition();
 
-                try {
-                    entry = get_syscall_entry(sc_name);
+                        gen::SyscallEntry entry;
+
+                        try {
+                            entry = get_syscall_entry(sc_name);
+                        } catch (CompilerError &e) {
+                            auto action_kind = rule->action()->action_kind();
+                            auto action_str = syntax::Action::kind_to_string(action_kind);
+
+                            throw e
+                                .push(syscall->begin(), "syscall '" + sc_name + "'")
+                                .push(rule->begin(), "rule '" + action_str + "'")
+                                .push(policy_stmt->begin(), "policy '" + policy_name + "'")
+                                .build(prog->filename());
+                        }
+
+                        auto &nr = entry.nr;
+                        auto &overloads = entry.overloads;
+
+                        auto syscall_rules = ([&policy_rules, &nr]() {
+                            auto syscall_rules = std::make_shared<semantics::SyscallRules>();
+
+                            auto it = policy_rules->find(nr);
+
+                            if (it == policy_rules->end()) {
+                                policy_rules->insert({nr, syscall_rules});
+                            } else {
+                                syscall_rules = it->second;
+                            }
+
+                            return syscall_rules;
+                        })();
+
+                        auto scope = new semantics::Scope(global_scope);
+
+                        auto syscall_params = merge_overloads(overloads);
+
+                        for (auto &[index, param] : syscall_params) {
+                            scope->add(
+                                std::make_shared<semantics::SyscallParam>(
+                                    ":" + param.name, index, param.pointer));
+                        }
+
+                        std::shared_ptr<syntax::Expr> evaluated_condition;
+
+                        try {
+                            evaluated_condition = scope->evaluate(condition);
+                        } catch (CompilerError &e) {
+                            throw e
+                                .push(condition->begin(), "syscall condition")
+                                .push(syscall->begin(), "syscall '" + sc_name + "'")
+                                .push(rule->begin(), "rule '" + rule->action()->to_string() + "'")
+                                .push(policy_stmt->begin(), "policy '" + policy_name + "'")
+                                .build(prog->filename());
+                        }
+
+                        syscall_rules->push_back({evaluated_condition,
+                                                  rule->action()});
+
+                        delete scope;
+                    }
+                    break;
                 }
-                catch (CompilerError & e) {
-                    auto action_kind = rule->action()->action_kind();
-                    auto action_str = syntax::Action::kind_to_string(action_kind);
+                case kind::apply: {
+                    auto apply = std::static_pointer_cast<syntax::Apply>(stmt);
 
-                    throw e
-                        .push(syscall->begin(), "syscall '" + sc_name + "'")
-                        .push(rule->begin(), "rule '" + action_str + "'")
-                        .push(policy_stmt->begin(), "policy '" + policy_name + "'")
-                        .build(prog->filename());
-                }
+                    auto it = policies->find(apply->policy());
 
-                auto & nr = entry.nr;
-                auto & overloads = entry.overloads;
-
-                auto syscall_rules = ([&policy_rules, &nr]() {
-                    auto syscall_rules = std::make_shared<semantics::SyscallRules>();
-
-                    auto it = policy_rules->find(nr);
-
-                    if (it == policy_rules->end()) {
-                        policy_rules->insert({nr, syscall_rules});
-                    } else {
-                        syscall_rules = it->second;
+                    if (it == policies->end()) {
+                        throw CompilerError("Policy not found: " + apply->policy())
+                            .push(apply->begin(), "apply statement")
+                            .push(policy_stmt->begin(), "policy definition")
+                            .build(file);
                     }
 
-                    return syscall_rules;
-                })();
+                    auto new_rules = it->second->rules();
 
-                auto scope = new semantics::Scope(global_scope);
+                    for (auto &[nr, sc_rules] : *new_rules) {
+                        auto it = policy_rules->find(nr);
 
-                auto syscall_params = merge_overloads(overloads);
+                        if (it == policy_rules->end()) {
+                            policy_rules->insert({nr, sc_rules});
+                        }
+                        else {
+                            auto old_rules = it->second;
 
-                for (auto &[index, param]: syscall_params) {
-                    scope->add(
-                        std::make_shared<semantics::SyscallParam>(
-                            ":" + param.name, index, param.pointer
-                        )
-                    );
+                            old_rules->insert(
+                                old_rules->end(),
+                                sc_rules->begin(),
+                                sc_rules->end()
+                            );
+                        }
+                    }
                 }
-
-                std::shared_ptr<syntax::Expr> evaluated_condition;
-
-                try {
-                    evaluated_condition = scope->evaluate(condition);
-                }
-                catch (CompilerError& e) {
-                    throw e
-                        .push(condition->begin(), "syscall condition")
-                        .push(syscall->begin(), "syscall '" + sc_name + "'")
-                        .push(rule->begin(), "rule '" + rule->action()->to_string() + "'")
-                        .push(policy_stmt->begin(), "policy '" + policy_name + "'")
-                        .build(prog->filename());
-                }
-
-                syscall_rules->push_back({
-                    evaluated_condition,
-                    rule->action()
-                });
-
-                delete scope;
             }
         }
     }

@@ -13,6 +13,7 @@
 #include "nodes/function_decl.hh"
 #include "nodes/policy.hh"
 #include "nodes/import_stmt.hh"
+#include "nodes/apply.hh"
 // Expressions
 #include "nodes/binary_expr.hh"
 #include "nodes/constant.hh"
