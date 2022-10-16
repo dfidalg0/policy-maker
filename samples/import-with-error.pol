@@ -1,0 +1,7 @@
+from './scopes.invalid.pol' import valid;
+
+policy main {
+    allow {
+        exit if valid(true)
+    }
+}
