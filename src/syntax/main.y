@@ -2,7 +2,6 @@
 
 %code requires {
     #include <string>
-    #include <sstream>
     #include <vector>
     #include <cstdio>
     #include <memory>
@@ -45,7 +44,12 @@
 
 %code top {
     #include <filesystem>
+
     namespace fs = std::filesystem;
+
+    #define STR_EVAL_DECL std::string evaluate_string(std::string str)
+
+    STR_EVAL_DECL;
 }
 
 %define parse.error detailed
@@ -174,7 +178,7 @@ stmt: policy_decl | function_decl | variable_decl | import_stmt
 import_stmt:
     FROM STRING[module] IMPORT import_list[args] SEMI {
         $$ = new syntax::ImportStmt(
-            $module->text().substr(1, $module->text().size() - 2),
+            evaluate_string($module->text()),
             std::shared_ptr<syntax::ImportList>($args),
             $FROM->begin(),
             $SEMI->end()
@@ -182,7 +186,7 @@ import_stmt:
     }
     | FROM STRING[module] IMPORT LPAREN import_list[args] RPAREN SEMI {
         $$ = new syntax::ImportStmt(
-            $module->text().substr(1, $module->text().size() - 2),
+            evaluate_string($module->text()),
             std::shared_ptr<syntax::ImportList>($args),
             $FROM->begin(),
             $SEMI->end()
@@ -501,7 +505,7 @@ constant:
     }
     | STRING[value] {
         $$ = new syntax::Constant(
-            $value->text().substr(1, $value->text().size() - 2),
+            evaluate_string($value->text()),
             $value->begin(),
             $value->end()
         );
@@ -564,6 +568,47 @@ YYERROR_DECL {
     ret->error
         << "Syntax error: " << (err + sizeof("sintax error,")) << '\n'
         << "    at " << filename << ':' << token->begin();
+}
+
+STR_EVAL_DECL {
+    str = str.substr(1, str.size() - 2);
+
+    std::stringstream output;
+
+    enum class State {
+        NORMAL,
+        ESCAPE
+    } state = State::NORMAL;
+
+    for (auto c: str) {
+        switch (state) {
+            case State::NORMAL: {
+                if (c != '\\') {
+                    output << c;
+                    continue;
+                }
+
+                state = State::ESCAPE;
+                break;
+            }
+            case State::ESCAPE: {
+                switch (c) {
+                    case 'n': output << '\n'; break;
+                    case 't': output << '\t'; break;
+                    case 'r': output << '\r'; break;
+                    case 'v': output << '\v'; break;
+                    case 'f': output << '\f'; break;
+                    case 'b': output << '\b'; break;
+                    default: output << c; break;
+                }
+
+                state = State::NORMAL;
+                break;
+            }
+        }
+    }
+
+    return output.str();
 }
 
 std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {

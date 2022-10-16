@@ -27,9 +27,30 @@ void Constant::print(uint level) {
         case Type::integer:
             std::cout << *(int *) _value;
             break;
-        case Type::string:
-            std::cout << *(std::string *) _value;
+        case Type::string: {
+            auto str = *(std::string *) _value;
+
+            std::cout << '"';
+
+            for (auto c: str) {
+                switch (c) {
+                    case '\n': std::cout << "\\n"; break;
+                    case '\t': std::cout << "\\t"; break;
+                    case '\r': std::cout << "\\r"; break;
+                    case '\v': std::cout << "\\v"; break;
+                    case '\f': std::cout << "\\f"; break;
+                    case '\b': std::cout << "\\b"; break;
+                    case '\\': std::cout << "\\\\"; break;
+                    case '\'': std::cout << "\\'"; break;
+                    case '"': std::cout << "\\\""; break;
+                    default: std::cout << c;
+                }
+            }
+
+            std::cout << '"';
+
             break;
+        }
         case Type::boolean:
             std::cout << *(bool *) _value;
             break;
