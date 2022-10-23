@@ -562,7 +562,7 @@ std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<semanti
         const auto sr = std::max(s - k / 2, 0);
         const auto sl = s - sr;
 
-        const auto m = i + (sl + size - 1 - sr) / 2;
+        const auto m = (i + sl + j - sr) / 2;
 
         result.push_back(rules_list[m]);
 
