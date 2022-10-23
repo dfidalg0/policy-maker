@@ -149,7 +149,8 @@ Arg Result::get(std::string name) {
 }
 
 bool Result::has(std::string name) {
-    return _args.find(name) != _args.end();
+    auto it = _args.find(name);
+    return it != _args.end() && it->second.type() != ArgType::ABSCENT;
 }
 
 Arg Result::operator[](std::string name) {
