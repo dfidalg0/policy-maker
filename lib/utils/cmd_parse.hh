@@ -67,11 +67,11 @@ namespace utils {
             bool has(std::string name);
 
             Arg operator[](std::string name);
-            inline const std::vector<char const *>& rest() const { return _rest; }
+            inline const std::vector<std::string>& rest() const { return _rest; }
             inline const bool is_help() const { return _is_help; }
         private:
             std::unordered_map<std::string, Arg> _args;
-            std::vector<char const *> _rest;
+            std::vector<std::string> _rest;
             bool _is_help;
         };
 

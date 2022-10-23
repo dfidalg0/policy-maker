@@ -172,11 +172,10 @@ int main(int argc, char const * argv[]) {
             return 0;
         }
 
-        char ** _argv = new char*[size + 1];
+        const char ** _argv = new const char*[size + 1];
 
         for (uint i = 0; i < size; ++i) {
-            _argv[i] = new char[strlen(_rest[i]) + 1];
-            strcpy(_argv[i], _rest[i]);
+            _argv[i] = _rest[i].c_str();
         }
 
         _argv[size] = nullptr;
