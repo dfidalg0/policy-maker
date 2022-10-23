@@ -228,6 +228,11 @@ CmdParser& CmdParser::add_help_arg(const std::string& name, const std::string& s
     return *this;
 }
 
+CmdParser& CmdParser::set_rest_description(const std::string& description) {
+    _rest_description = description;
+    return *this;
+}
+
 std::string CmdParser::help(std::string name) const {
     std::stringstream ss;
 
@@ -249,7 +254,7 @@ std::string CmdParser::help(std::string name) const {
         }
 
         if (!arg.required) {
-            ss << "[";
+            ss << "\n         [";
         }
 
         ss << "--" << name;
@@ -265,11 +270,9 @@ std::string CmdParser::help(std::string name) const {
         if (!arg.required) {
             ss << "]";
         }
-
-        ss << " ";
     }
 
-    ss << "...\n\nParameters:\n";
+    ss << "\n         [...]\n\nParameters:\n";
 
     for (auto &arg: _spec.positional) {
         ss << "  " << arg.name << " ( --" << arg.name;
@@ -295,6 +298,10 @@ std::string CmdParser::help(std::string name) const {
         }
 
         ss << ":  " << arg.description << "\n";
+    }
+
+    if (_rest_description.size()) {
+        ss << "\n  [...] " << _rest_description;
     }
 
     return ss.str();

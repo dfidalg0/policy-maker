@@ -79,12 +79,14 @@ namespace utils {
 
         CmdParser & add_arg(const ArgInfo& info);
         CmdParser & add_help_arg(const std::string& name = "help", const std::string& shorthand = "h");
+        CmdParser & set_rest_description(const std::string& description);
 
         Result parse(int argc, char const * argv[]) const;
 
         std::string help(std::string name) const;
     private:
         ArgSpec _spec;
+        std::string _rest_description;
 
         void _add_to_map(std::string name, const ArgInfo& info, bool shorthand = false);
     };

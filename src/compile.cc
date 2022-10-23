@@ -247,16 +247,17 @@ CompileResult::CompileResult(syntax::Program *program, std::string entry)
 CompileResult::CompileResult(std::string filename, std::string entry)
     : CompileResult(semantics::analyze(filename).get(), entry) {}
 
-// Conversão do filtro para código em C
-CompileResult::operator std::string() {
+std::string CompileResult::to_string(uint indent) {
     std::stringstream ss;
 
     for (auto &[code, jt, jf, k]: *_filter) {
-        auto op_class = code & 0x07;
+        auto op_class = BPF_CLASS(code);
+
+        ss << std::string(indent, ' ');
 
         switch (op_class) {
             case BPF_JMP: {
-                if ((code & 0xf0) == BPF_JA) {
+                if (BPF_OP(code) == BPF_JA) {
                     ss << "BPF_STMT(";
                 }
                 else {
@@ -265,7 +266,7 @@ CompileResult::operator std::string() {
 
                 ss << "BPF_JMP | ";
 
-                switch (code & 0xf0) {
+                switch (BPF_OP(code)) {
                     case BPF_JA:
                         ss << "BPF_JA  | ";
                         break;
@@ -288,7 +289,7 @@ CompileResult::operator std::string() {
             case BPF_LD: {
                 ss << "BPF_STMT(BPF_LD  | ";
 
-                switch(code & 0x18) {
+                switch(BPF_SIZE(code)) {
                     case BPF_W:
                         ss << "BPF_W   | ";
                         break;
@@ -300,7 +301,7 @@ CompileResult::operator std::string() {
                         break;
                 }
 
-                switch (code & 0xe0) {
+                switch (BPF_MODE(code)) {
                     case BPF_ABS:
                         ss << "BPF_ABS, ";
                         break;
@@ -323,7 +324,7 @@ CompileResult::operator std::string() {
             case BPF_LDX: {
                 ss << "BPF_STMT(BPF_LDX | ";
 
-                switch(code & 0x18) {
+                switch (BPF_SIZE(code)) {
                     case BPF_W:
                         ss << "BPF_W   | ";
                         break;
@@ -335,7 +336,7 @@ CompileResult::operator std::string() {
                         break;
                 }
 
-                switch (code & 0xe0) {
+                switch (BPF_MODE(code)) {
                     case BPF_IMM:
                         ss << "BPF_IMM, ";
                         break;
@@ -359,7 +360,7 @@ CompileResult::operator std::string() {
             case BPF_ALU: {
                 ss << "BPF_STMT(BPF_ALU | ";
 
-                switch(code & 0xf0) {
+                switch(BPF_OP(code)) {
                     case BPF_ADD:
                         ss << "BPF_ADD | ";
                         break;
@@ -433,7 +434,7 @@ CompileResult::operator std::string() {
             }
         }
 
-        if ((code & 0x07) == BPF_RET) {
+        if (BPF_CLASS(code) == BPF_RET) {
             switch (k & 0xffff0000) {
                 case SECCOMP_RET_ALLOW:
                     ss << "SECCOMP_RET_ALLOW";
@@ -476,6 +477,11 @@ CompileResult::operator std::string() {
     }
 
     return ss.str();
+}
+
+// Conversão do filtro para código em C
+CompileResult::operator std::string() {
+    return to_string(0);
 }
 
 // Conversão do filtro para estrutura sock_fprog

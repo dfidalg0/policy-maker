@@ -7,6 +7,7 @@
 
 #include <run_seccomp.hh>
 #include <parser.yy.hh>
+#include <write_compiled.hh>
 
 using std::cout;
 using std::endl;
@@ -15,6 +16,9 @@ using std::cerr;
 int main(int argc, char const * argv[]) {
     const auto cmd_parser = utils::CmdParser()
         .add_help_arg()
+        .set_rest_description(
+            "If present, any arguments after the compiler options will be passed to execvp after the filter is installed. No output will be generated."
+        )
         .add_arg({
             .name = "input",
             .type = utils::ArgType::STRING,
@@ -22,6 +26,23 @@ int main(int argc, char const * argv[]) {
             .positional = true,
             .description = "The input file to compile",
             .shorthand = "i",
+        })
+        .add_arg({
+            .name = "output",
+            .type = utils::ArgType::STRING,
+            .required = false,
+            .positional = false,
+            .description = "The output file to write to",
+            .shorthand = "o",
+            .default_value = "filter.c",
+        })
+        .add_arg({
+            .name = "dry-run",
+            .type = utils::ArgType::NONE,
+            .required = false,
+            .positional = false,
+            .description = "Don't produce any output. Just validates the input file",
+            .shorthand = "d",
         })
         .add_arg({
             .name = "print-ast",
@@ -92,6 +113,10 @@ int main(int argc, char const * argv[]) {
         auto args = options.rest();
 
         if (!args.size()) {
+            if (options.has("output") && !options.has("dry-run")) {
+                write_compiled(options.get("output"), compile_result);
+            }
+
             cout << "Code compiled successfully" << endl;
             return 0;
         }

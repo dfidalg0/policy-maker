@@ -17,6 +17,8 @@ public:
     CompileResult(syntax::Program * program, std::string entry);
     CompileResult(std::string filename, std::string entry);
 
+    std::string to_string(uint indent = 0);
+
     operator std::string();
 
     operator sock_fprog();
