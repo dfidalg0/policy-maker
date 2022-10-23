@@ -5,9 +5,7 @@
 #include <unistd.h>
 #include <cstring>
 
-#include <linux/filter.h>
-#include <linux/seccomp.h>
-#include <sys/prctl.h>
+#include <run_seccomp.hh>
 #include <parser.yy.hh>
 
 using std::cout;
@@ -62,8 +60,9 @@ int main(int argc, char const * argv[]) {
         auto ast = syntax::parse(options.get("input")).release();
 
         if (options.has("print-ast")) {
-            cout << "AST:" << endl;
+            cout << "AST:\n";
             ast->print();
+            cout << '\n';
         }
 
         auto result = semantics::analyze(ast).release();
@@ -73,6 +72,7 @@ int main(int argc, char const * argv[]) {
         if (options.has("print-analyzed-ast")) {
             cout << "Analyzed AST:\n";
             result->print();
+            cout << '\n';
         }
 
         auto compile_result = compile(result, options.get("entry"));
@@ -89,34 +89,14 @@ int main(int argc, char const * argv[]) {
             cout << prog_str << endl;
         }
 
-        if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
-            perror("prctl");
-            return 1;
-        }
+        auto args = options.rest();
 
-        if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog)) {
-            perror("seccomp");
-            return 1;
-        }
-
-        auto _rest = options.rest();
-
-        auto size = _rest.size();
-
-        if (!size) {
+        if (!args.size()) {
             cout << "Code compiled successfully" << endl;
             return 0;
         }
 
-        const char ** _argv = new const char*[size + 1];
-
-        for (uint i = 0; i < size; ++i) {
-            _argv[i] = _rest[i].c_str();
-        }
-
-        _argv[size] = nullptr;
-
-        execvp(_argv[0], (char * const *) _argv);
+        return run_seccomp(prog, args);
     }
     catch (FileNotFoundError e) {
         cerr << e.what() << endl;
