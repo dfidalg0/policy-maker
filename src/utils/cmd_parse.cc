@@ -158,7 +158,7 @@ Arg Result::operator[](std::string name) {
 
 CmdParser::CmdParser() {}
 
-CmdParser::Result CmdParser::parse(int argc, char const * argv[]) {
+CmdParser::Result CmdParser::parse(int argc, char const * argv[]) const {
     try {
         auto result = Result(argc, argv, _spec);
 
@@ -227,7 +227,7 @@ CmdParser& CmdParser::add_help_arg(const std::string& name, const std::string& s
     return *this;
 }
 
-std::string CmdParser::help(std::string name) {
+std::string CmdParser::help(std::string name) const {
     std::stringstream ss;
 
     ss << "Usage: " << name;

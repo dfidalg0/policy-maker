@@ -80,9 +80,9 @@ namespace utils {
         CmdParser & add_arg(const ArgInfo& info);
         CmdParser & add_help_arg(const std::string& name = "help", const std::string& shorthand = "h");
 
-        Result parse(int argc, char const * argv[]);
+        Result parse(int argc, char const * argv[]) const;
 
-        std::string help(std::string name);
+        std::string help(std::string name) const;
     private:
         ArgSpec _spec;
 

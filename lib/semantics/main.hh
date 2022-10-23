@@ -45,6 +45,8 @@ namespace semantics {
         inline std::shared_ptr<Scope> scope() { return _scope; }
 
         inline std::string filename() { return _filename; }
+
+        void print();
     private:
         std::shared_ptr<Policies> _policies;
         std::shared_ptr<Scope> _scope;

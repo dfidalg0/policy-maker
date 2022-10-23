@@ -15,7 +15,7 @@ using std::endl;
 using std::cerr;
 
 int main(int argc, char const * argv[]) {
-    auto cmd_parser = utils::CmdParser()
+    const auto cmd_parser = utils::CmdParser()
         .add_help_arg()
         .add_arg({
             .name = "input",
@@ -71,72 +71,8 @@ int main(int argc, char const * argv[]) {
         delete ast;
 
         if (options.has("print-analyzed-ast")) {
-            cout << "Analyzed AST:" << endl;
-
-            auto policies = result->policies();
-            auto symbols = result->scope()->symbols();
-
-            cout << "Symbols:" << endl;
-
-            for (auto [name, symbol] : symbols) {
-                cout << "  - " << name;
-
-                if (symbol->kind() == semantics::Symbol::Kind::variable) {
-                    auto var = std::static_pointer_cast<semantics::Variable>(symbol);
-                    cout << ": Variable" << endl;
-                    var->value()->print(4);
-                }
-                else {
-                    auto fn = std::static_pointer_cast<semantics::Function>(symbol);
-                    cout << ": Function" << endl;
-                    cout << "    - Args: " << endl;
-                    for (auto arg : fn->args()) {
-                        cout << "        - " << arg << endl;
-                    }
-                    cout << "    - Body:" << endl;
-                    fn->body()->print(8);
-                }
-            }
-
-            cout << "Policies:" << endl;
-
-            for (auto & policy : *policies) {
-                cout << "  - Policy: " << policy.first << endl;
-
-                cout << "    Default action: ";
-
-                auto default_action = policy.second->default_action();
-
-                cout << syntax::Action::kind_to_string(default_action->action_kind());
-
-                if (default_action->param() != -1) {
-                    cout << "(" << default_action->param() << ")";
-                }
-
-                cout << endl;
-
-                for (auto & syscall : *policy.second->rules()) {
-                    cout << "    Syscall: " << syscall.first << endl;
-
-                    for (auto & rule : *syscall.second) {
-                        cout
-                            << "      Action: "
-                            << syntax::Action::kind_to_string(rule.second->action_kind());
-
-                        if (rule.second->param() != -1) {
-                            cout << "(" << rule.second->param() << ")";
-                        }
-
-                        if (rule.first) {
-                            cout << " IF\n";
-                            rule.first->print(8);
-                        }
-                        else {
-                            std::cout << endl;
-                        }
-                    }
-                }
-            }
+            cout << "Analyzed AST:\n";
+            result->print();
         }
 
         auto compile_result = compile(result, options.get("entry"));
@@ -148,7 +84,7 @@ int main(int argc, char const * argv[]) {
         if (options.has("print-bpf")) {
             std::string prog_str = compile_result;
 
-            cout << "Compiled program:\n" << endl;
+            cout << "Compiled program:\n";
 
             cout << prog_str << endl;
         }

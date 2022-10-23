@@ -336,3 +336,78 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
 
     return std::make_unique<AnalysisResult>(prog->filename(), policies, global_scope);
 }
+
+void AnalysisResult::print() {
+    using std::cout;
+
+    auto policies = this->policies();
+    auto symbols = this->scope()->symbols();
+
+    cout << "Symbols:\n";
+
+    if (symbols.empty()) {
+        cout << "  No symbol defined\n";
+    }
+
+    for (auto [name, symbol] : symbols) {
+        cout << "  - " << name;
+
+        if (symbol->kind() == semantics::Symbol::Kind::variable) {
+            auto var = std::static_pointer_cast<semantics::Variable>(symbol);
+            cout << ": Variable\n";
+            var->value()->print(4);
+        } else {
+            auto fn = std::static_pointer_cast<semantics::Function>(symbol);
+            cout << ": Function\n";
+            cout << "    - Args: \n";
+            for (auto arg : fn->args()) {
+                cout << "        - " << arg << '\n';
+            }
+            cout << "    - Body:\n";
+            fn->body()->print(8);
+        }
+    }
+
+    cout << "Policies:\n";
+
+    if (policies->empty()) {
+        cout << "  No policies defined\n";
+    }
+
+    for (auto &policy : *policies) {
+        cout << "  - Policy: " << policy.first << '\n';
+
+        cout << "    Default action: ";
+
+        auto default_action = policy.second->default_action();
+
+        cout << syntax::Action::kind_to_string(default_action->action_kind());
+
+        if (default_action->param() != -1) {
+            cout << "(" << default_action->param() << ")";
+        }
+
+        cout << '\n';
+
+        for (auto &syscall : *policy.second->rules()) {
+            cout << "    Syscall: " << syscall.first << '\n';
+
+            for (auto &rule : *syscall.second) {
+                cout
+                    << "      Action: "
+                    << syntax::Action::kind_to_string(rule.second->action_kind());
+
+                if (rule.second->param() != -1) {
+                    cout << "(" << rule.second->param() << ")";
+                }
+
+                if (rule.first) {
+                    cout << " IF\n";
+                    rule.first->print(8);
+                } else {
+                    cout << '\n';
+                }
+            }
+        }
+    }
+}
