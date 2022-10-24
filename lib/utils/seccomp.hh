@@ -11,4 +11,6 @@ int seccomp(unsigned int operation, unsigned int flags, void *args);
 
 int set_no_new_privs();
 
+bool has_notify_return(const sock_fprog& prog);
+
 #endif // __UTILS_SECCOMP_HH__

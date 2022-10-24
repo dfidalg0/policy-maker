@@ -23,6 +23,16 @@ void write_compiled(const std::string &filename, CompileResult &result) {
         throw FileNotFoundError(filename);
     }
 
+    std::string flag = "0";
+    std::string fail_condition = "ret";
+    std::string return_doc = "0 when the filter is installed successfully.";
+
+    if (has_notify_return((sock_fprog) result)) {
+        flag = "SECCOMP_FILTER_FLAG_NEW_LISTENER";
+        fail_condition = "ret < 0";
+        return_doc = "a file descriptor where notifications can be read from, or -1 on error.";
+    }
+
     auto wrapper = Wrapper(file);
 
     wrapper
@@ -44,6 +54,10 @@ void write_compiled(const std::string &filename, CompileResult &result) {
         << "    return syscall(__NR_seccomp, operation, flags, args);"
         << "}"
         << ""
+        << "/**"
+        << " * Install the seccomp filter in the current process."
+        << " * @returns " + return_doc
+        << " */"
         << "int install_filter() {"
         << "    /* If your editor supports folding, this is a good place to use it. */"
         << "    static struct sock_filter filter[] = {";
@@ -63,16 +77,15 @@ void write_compiled(const std::string &filename, CompileResult &result) {
         << "        .filter = filter"
         << "    };"
         << ""
-        << "    int ret = seccomp(SECCOMP_SET_MODE_FILTER, 0, &prog);"
+        << "    int ret = seccomp(SECCOMP_SET_MODE_FILTER, " + flag + ", &prog);"
         << ""
-        << "    if (ret) {"
+        << "    if (" + fail_condition + ") {"
         << "        perror(\"seccomp\");"
         << "        return -1;"
         << "    }"
         << ""
         << "    return ret;"
-        << "}"
-        << "";
+        << "}";
 
         file.close();
 }

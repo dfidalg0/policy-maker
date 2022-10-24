@@ -1,0 +1,6 @@
+policy main allow or {
+    notify {
+        execve,
+        exit_group,
+    }
+}

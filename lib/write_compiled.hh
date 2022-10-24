@@ -4,6 +4,7 @@
 #include <fstream>
 #include <linux/filter.h>
 #include <compile.hh>
+#include <utils/seccomp.hh>
 
 void write_compiled(const std::string &filename, CompileResult &result);
 
