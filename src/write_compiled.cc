@@ -87,5 +87,5 @@ void write_compiled(const std::string &filename, CompileResult &result) {
         << "    return ret;"
         << "}";
 
-        file.close();
+    file.close();
 }

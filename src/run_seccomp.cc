@@ -61,8 +61,6 @@ int run_seccomp(sock_fprog &prog, std::vector<std::string> &args) {
 
         auto fd = install();
 
-        printf("%d", fd);
-
         if (fd < 0) {
             perror("seccomp");
             return 1;
