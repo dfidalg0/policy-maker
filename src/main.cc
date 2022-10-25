@@ -73,6 +73,15 @@ int main(int argc, char const * argv[]) {
             .description = "The entry point of the program",
             .shorthand = "e",
             .default_value = "main",
+        })
+        .add_arg({
+            .name = "target",
+            .type = utils::ArgType::STRING,
+            .required = false,
+            .positional = false,
+            .description = "Name of the generated function",
+            .shorthand = "t",
+            .default_value = "install_filter"
         });
 
     try {
@@ -114,7 +123,7 @@ int main(int argc, char const * argv[]) {
 
         if (!args.size()) {
             if (options.has("output") && !options.has("dry-run")) {
-                write_compiled(options.get("output"), compile_result);
+                write_compiled(options.get("output"), options.get("target"), compile_result);
             }
 
             cout << "Code compiled successfully" << endl;

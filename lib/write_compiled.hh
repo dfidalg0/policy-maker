@@ -6,6 +6,6 @@
 #include <compile.hh>
 #include <utils/seccomp.hh>
 
-void write_compiled(const std::string &filename, CompileResult &result);
+void write_compiled(const std::string filename, std::string target, CompileResult &result);
 
 #endif // __WRITE_COMPILED_HH__

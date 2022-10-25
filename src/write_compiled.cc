@@ -1,5 +1,6 @@
 #include <write_compiled.hh>
 #include <errors.hh>
+#include <regex>
 
 class Wrapper {
 public:
@@ -16,7 +17,13 @@ private:
 };
 
 
-void write_compiled(const std::string &filename, CompileResult &result) {
+void write_compiled(const std::string filename, std::string target, CompileResult &result) {
+    std::regex re(R"([a-zA-Z_][a-zA-Z0-9_]*)");
+
+    if (!std::regex_match(target, re)) {
+        throw std::runtime_error("Invalid function name: " + target);
+    }
+
     std::ofstream file(filename, std::ios::out | std::ios::binary);
 
     if (!file.is_open()) {
@@ -37,9 +44,9 @@ void write_compiled(const std::string &filename, CompileResult &result) {
 
     wrapper
         << "/**"
-        << " * In order to use the install_filter utility, you must compile this file"
+        << " * In order to use the " + target + " utility, you must compile this file"
         << " * and include the line:"
-        << " * extern int install_filter();"
+        << " * extern int " + target + "();"
         << " * in your program."
         << " */"
         << ""
@@ -58,7 +65,7 @@ void write_compiled(const std::string &filename, CompileResult &result) {
         << " * Install the seccomp filter in the current process."
         << " * @returns " + return_doc
         << " */"
-        << "int install_filter() {"
+        << "int " + target + "() {"
         << "    /* If your editor supports folding, this is a good place to use it. */"
         << "    static struct sock_filter filter[] = {";
 
