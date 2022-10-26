@@ -131,7 +131,7 @@ int run_seccomp(sock_fprog &prog, std::vector<std::string> &args) {
         res->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 
         if (ioctl(fd, SECCOMP_IOCTL_NOTIF_SEND, res) == -1) {
-            perror("\tS: ioctl-SECCOMP_IOCTL_NOTIF_SEND");
+            perror("ioctl - SECCOMP_IOCTL_NOTIF_SEND");
             exit(1);
         }
     }
