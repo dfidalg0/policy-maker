@@ -213,10 +213,13 @@ CompileResult::CompileResult(semantics::AnalysisResult * ar, std::string entry) 
     }
 
     // Agora, vamos fazer o carregamento do número da syscall no acumulador
-    // para a verificação pelos nossos filtros
-    _filter->push_back(
-        BPF_STMT(BPF_LD | BPF_W | BPF_ABS, SECCOMP_DATA(nr))
-    );
+    // para a verificação pelos nossos filtros. Mas isso só é necessário
+    // se tivermos alguma regra para verificar.
+    if (order.size()) {
+        _filter->push_back(
+            BPF_STMT(BPF_LD | BPF_W | BPF_ABS, SECCOMP_DATA(nr))
+        );
+    }
 
     // Verificação da arquitetura
 
@@ -530,6 +533,10 @@ sock_filter get_seccomp_ret(syntax::Action *action) {
 }
 
 std::vector<SyscallRulesWithNumber> get_resolution_order(std::shared_ptr<semantics::PolicyRules> rules) {
+    if (rules->empty()) {
+        return std::vector<SyscallRulesWithNumber>();
+    }
+
     static auto log = [](int x) {
         int ret = 0;
 
