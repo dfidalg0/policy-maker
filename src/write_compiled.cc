@@ -24,7 +24,7 @@ void write_compiled(const std::string filename, std::string target, CompileResul
         throw std::runtime_error("Invalid function name: " + target);
     }
 
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    std::ofstream file(filename);
 
     if (!file.is_open()) {
         throw FileNotFoundError(filename);
