@@ -16,6 +16,19 @@ private:
     std::ofstream * file;
 };
 
+struct File {
+    std::string name;
+    std::string extension;
+};
+
+File get_name_and_extension(const std::string &filename) {
+    auto idx = filename.rfind(".");
+
+    return {
+        .name = filename.substr(0, idx),
+        .extension = filename.substr(1 + idx)
+    };
+}
 
 void write_compiled(const std::string filename, std::string target, CompileResult &result) {
     std::regex re(R"([a-zA-Z_][a-zA-Z0-9_]*)");
@@ -26,8 +39,23 @@ void write_compiled(const std::string filename, std::string target, CompileResul
 
     std::ofstream file(filename);
 
+    auto [name, ext] = get_name_and_extension(filename);
+
+    std::string header_ext =
+        (ext == "cp" || ext == "cpp" || ext == "cc" || ext == "c++")
+            ? ".hh"
+            : ".h";
+
+    auto header_filename = name + header_ext;
+
+    std::ofstream header(header_filename);
+
     if (!file.is_open()) {
         throw FileNotFoundError(filename);
+    }
+
+    if (!header.is_open()) {
+        throw FileNotFoundError(header_filename);
     }
 
     std::string flag = "0";
@@ -40,14 +68,25 @@ void write_compiled(const std::string filename, std::string target, CompileResul
         return_doc = "a file descriptor where notifications can be read from, or -1 on error.";
     }
 
-    auto wrapper = Wrapper(file);
+    Wrapper(header)
+        << "#ifndef __POLICY_FILTER_GENERATED__"
+        << "#define __POLICY_FILTER_GENERATED__"
+        << ""
+        << "int " + target + "();"
+        << ""
+        << "#endif // __POLICY_FILTER_GENERATED__";
 
-    wrapper
+    header.close();
+
+    auto file_wrapper = Wrapper(file);
+
+    file_wrapper
         << "/**"
         << " * In order to use the " + target + " utility, you must compile this file"
         << " * and include the line:"
         << " * extern int " + target + "();"
-        << " * in your program."
+        << " * in your program or"
+        << " * include the " + header_filename + " generated header"
         << " */"
         << ""
         << "#include <linux/filter.h>"
@@ -56,6 +95,7 @@ void write_compiled(const std::string filename, std::string target, CompileResul
         << "#include <linux/seccomp.h>"
         << "#include <sys/prctl.h>"
         << "#include <stdio.h>"
+        << "#include \"" + header_filename + "\""
         << ""
         << "static int seccomp(unsigned int operation, unsigned int flags, void *args) {"
         << "    return syscall(__NR_seccomp, operation, flags, args);"
@@ -71,7 +111,7 @@ void write_compiled(const std::string filename, std::string target, CompileResul
 
     file << result.to_string(8);
 
-    wrapper
+    file_wrapper
         << "    };"
         << ""
         << "    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {"
