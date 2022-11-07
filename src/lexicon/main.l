@@ -18,7 +18,7 @@ SET_TOKEN_DECL;
 %option reentrant
 
 id            [a-zA-Z_][a-zA-Z0-9_]*
-sc_param      :([0-9]+|[a-z_]+)
+sc_param      :([0-9]+|{id})
 lbrace        \{
 rbrace        \}
 lparen        \(
