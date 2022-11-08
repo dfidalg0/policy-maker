@@ -3,8 +3,6 @@ fn and(cond1, cond2) -> cond1 && cond2;
 fn gte(x, y) -> x >= y;
 fn lte(x, y) -> x <= y;
 
-fn isBetween(x, a, b) -> and(gte(x,a), lte(x,b));
-
 STDIN = 0;
 STDOUT = 1;
 STDERR = 2;
@@ -16,3 +14,6 @@ policy main {
         exit_group
     }
 }
+
+// Functions declared after a policy can still be used
+fn isBetween(x, a, b) -> and(gte(x,a), lte(x,b));
