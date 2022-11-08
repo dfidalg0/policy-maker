@@ -650,7 +650,7 @@ std::unique_ptr<syntax::Program> syntax::parse(std::string filename) {
     if (err.size()) {
         delete program;
 
-        throw std::runtime_error(err);
+        throw CompilerError(err);
     }
 
     return std::unique_ptr<syntax::Program>(program);
