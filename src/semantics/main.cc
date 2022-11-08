@@ -292,8 +292,10 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
                                 .build(prog->filename());
                         }
 
-                        syscall_rules->push_back({evaluated_condition,
-                                                  rule->action()});
+                        syscall_rules->push_back({
+                            evaluated_condition,
+                            rule->action()
+                        });
 
                         delete scope;
                     }
