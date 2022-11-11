@@ -185,27 +185,33 @@ CompileResult::CompileResult(semantics::AnalysisResult * ar, std::string entry) 
             )
         );
 
-        // No caso curr_nr > nr[i]. Saltamos em direção ao filho direito
-        jump_size = _filter->size() - right_son_pos - 1;
-        additional_instruction = jump_size > 0xff;
+        // Aqui, iremos checar se o número analisado é maior que o atual.
+        // No caso em que os saltos no caso maior e menor são iguais, o que
+        // ocorre quando ambos resultam na ação padrão, podemos omitir essa
+        // checagem, pois é redundante.
+        if (right_son_pos != left_son_pos) {
+            // No caso curr_nr > nr[i]. Saltamos em direção ao filho direito
+            jump_size = _filter->size() - right_son_pos - 1;
+            additional_instruction = jump_size > 0xff;
 
-        if (additional_instruction) {
+            if (additional_instruction) {
+                _filter->push_back(
+                    BPF_STMT(BPF_JMP | BPF_JA | BPF_K, jump_size)
+                );
+                jump_size = 0;
+            }
+
+            // Jump condicional. Aqui, vamos verificar se curr_nr > nr[i]. Se
+            // for, saltamos para a instrução de JUMP definida acima. Caso
+            // contrário, saltamos para a instrução de JUMP condicional acima,
+            // que checará se curr_nr == nr[i]
             _filter->push_back(
-                BPF_STMT(BPF_JMP | BPF_JA | BPF_K, jump_size)
+                BPF_JUMP(
+                    BPF_JMP | BPF_JGT | BPF_K, nr,
+                    (__u8) jump_size, additional_instruction
+                )
             );
-            jump_size = 0;
         }
-
-        // Jump condicional. Aqui, vamos verificar se curr_nr > nr[i]. Se
-        // for, saltamos para a instrução de JUMP definida acima. Caso
-        // contrário, saltamos para a instrução de JUMP condicional acima, que
-        // checará se curr_nr == nr[i]
-        _filter->push_back(
-            BPF_JUMP(
-                BPF_JMP | BPF_JGT | BPF_K, nr,
-                (__u8) jump_size, additional_instruction
-            )
-        );
 
         auto pos = _filter->size() - 1;
 
