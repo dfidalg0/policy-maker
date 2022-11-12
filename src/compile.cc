@@ -139,7 +139,7 @@ CompileResult::CompileResult(semantics::AnalysisResult * ar, std::string entry) 
             _filter->push_back(
                 // Se o acumulador for 0, pula para a próxima regra. Caso
                 // contrário, pula para o destino da regra
-                BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, 0, 0, 1)
+                BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 1, 0)
             );
 
             std::unique_ptr<FilterVector> compiled_expr;
