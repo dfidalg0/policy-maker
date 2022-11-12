@@ -195,6 +195,9 @@ def handle_overload(overload: str) -> list[Param]:
 
 
 def find_syscall_args(name):
+    if name == 'exit':
+        name = '_exit'
+
     try:
         out = check_output(['man', '2', name], stderr=DEVNULL).decode('utf-8')
     except CalledProcessError:
