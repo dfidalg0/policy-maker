@@ -90,9 +90,21 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
                 __u8 rsize = Rfilter->size();
 
-                filter->push_back(
-                    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, rsize)
-                );
+                // Provavelmente não é necessário, mas é bom ter certeza
+                if (rsize > 0xff) {
+                    filter->push_back(
+                        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 1, 0)
+                    );
+
+                    filter->push_back(
+                        BPF_STMT(BPF_JMP | BPF_JA | BPF_K, rsize)
+                    );
+                }
+                else {
+                    filter->push_back(
+                        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, rsize)
+                    );
+                }
 
                 filter->insert(filter->end(), Rfilter->begin(), Rfilter->end());
 
@@ -108,9 +120,21 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
                 __u8 rsize = Rfilter->size();
 
-                filter->push_back(
-                    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, rsize, 0)
-                );
+                // Provavelmente não é necessário, mas é bom ter certeza
+                if (rsize > 0xff) {
+                    filter->push_back(
+                        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1)
+                    );
+
+                    filter->push_back(
+                        BPF_STMT(BPF_JMP | BPF_JA | BPF_K, rsize)
+                    );
+                }
+                else {
+                    filter->push_back(
+                        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, rsize, 0)
+                    );
+                }
 
                 filter->insert(filter->end(), Rfilter->begin(), Rfilter->end());
 
