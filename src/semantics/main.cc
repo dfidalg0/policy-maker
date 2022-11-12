@@ -283,6 +283,10 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
 
                         try {
                             evaluated_condition = scope->evaluate(condition);
+
+                            if (!evaluated_condition) {
+                                evaluated_condition = std::make_shared<syntax::Constant>(true);
+                            }
                         } catch (CompilerError &e) {
                             throw e
                                 .push(condition->begin(), "syscall condition")
@@ -292,10 +296,16 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
                                 .build(prog->filename());
                         }
 
-                        syscall_rules->push_back({
-                            evaluated_condition,
-                            rule->action()
-                        });
+                        auto econst = evaluated_condition->kind() == kind::constant
+                            ? std::static_pointer_cast<syntax::Constant>(evaluated_condition)
+                            : nullptr;
+
+                        if (!econst || econst->is_truthy()) {
+                            syscall_rules->push_back({
+                                evaluated_condition,
+                                rule->action()
+                            });
+                        }
 
                         delete scope;
                     }
@@ -332,6 +342,16 @@ std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::s
                         }
                     }
                 }
+            }
+        }
+    }
+
+    for (auto [_, policy]: *policies) {
+        auto rules = policy->rules();
+
+        for (auto& [nr, rule]: *rules) {
+            if (rule->empty()) {
+                rules->erase(nr);
             }
         }
     }
