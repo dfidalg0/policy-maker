@@ -1,0 +1,8 @@
+policy main {
+    allow {
+        read if true || :fd == 0,
+        write if false || :fd == 1,
+        exit if false && :status == 1,
+        exit_group if true && :status != 10
+    }
+}

@@ -363,58 +363,86 @@ std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<UnaryExpr> unary) 
 std::shared_ptr<syntax::Expr> Scope::simplify(std::shared_ptr<BinaryExpr> binary) {
     using type = Constant::Type;
     using kind = syntax::Expr::Kind;
+    using opKind = BinaryExpr::OpKind;
 
-    auto left = evaluate(binary->left());
-    auto right = evaluate(binary->right());
+    auto L = evaluate(binary->left());
+    auto R = evaluate(binary->right());
     auto op = binary->op();
     auto begin = binary->begin();
     auto end = binary->end();
 
+    auto Lconst = L->kind() == kind::constant
+        ? std::static_pointer_cast<Constant>(L)
+        : nullptr;
+
+    auto Rconst = R->kind() == kind::constant
+        ? std::static_pointer_cast<Constant>(R)
+        : nullptr;
+
     // TODO: implementar simplificação com base na associatividade dos
     // operadores
 
-    if (
-        left->kind() != kind::constant ||
-        right->kind() != kind::constant
-    ) {
+    // Casos especiais
+    if (op == opKind::lor) {
+        if (Lconst && Lconst->is_truthy()) return L;
+
+        if (Rconst && Rconst->is_truthy()) return R;
+
+        // L é uma constante falsa
+        if (Lconst) return R;
+
+        // R é uma constante falsa
+        if (Rconst) return L;
+    }
+
+    if (op == opKind::land) {
+        if (Lconst && !Lconst->is_truthy()) return L;
+
+        if (Rconst && !Rconst->is_truthy()) return R;
+
+        // L é uma constante verdadeira
+        if (Lconst) return R;
+
+        // R é uma constante verdadeira
+        if (Rconst) return L;
+    }
+
+    if (!Lconst || !Lconst) {
         return std::make_unique<BinaryExpr>(
-            left,
-            right,
+            L,
+            R,
             op,
             begin,
             end
         );
     }
 
-    auto cl = std::static_pointer_cast<Constant>(left);
-    auto cr = std::static_pointer_cast<Constant>(right);
-
-    if (cl->type() == type::null || cr->type() == type::null) {
+    if (Lconst->type() == type::null || Rconst->type() == type::null) {
         throw CompilerError("Invalid operation with null")
             .push(binary->begin(), "expression");
     }
 
-    switch (cl->type()) {
+    switch (Lconst->type()) {
         case type::integer:
-            switch (cr->type()) {
+            switch (Rconst->type()) {
                 case type::integer:
                 case type::boolean:
-                    return operate<int, int>(cl.get(), op, cr.get());
+                    return operate<int, int>(Lconst.get(), op, Rconst.get());
                 default:
-                    return operate<std::string, std::string>(cl.get(), op, cr.get());
+                    return operate<std::string, std::string>(Lconst.get(), op, Rconst.get());
             }
         case type::boolean:
-            switch (cr->type()) {
+            switch (Rconst->type()) {
                 case type::integer:
                 case type::boolean:
-                    return operate<bool, bool>(cl.get(), op, cr.get());
+                    return operate<bool, bool>(Lconst.get(), op, Rconst.get());
                 default:
-                    return operate<std::string, std::string>(cl.get(), op, cr.get());
+                    return operate<std::string, std::string>(Lconst.get(), op, Rconst.get());
             }
         // type::string
         default:
-            return operate<std::string, std::string>(cl.get(), op, cr.get());
+            return operate<std::string, std::string>(Lconst.get(), op, Rconst.get());
     }
 
-    return std::make_unique<BinaryExpr>(left, right, op, begin, end);
+    return std::make_unique<BinaryExpr>(L, R, op, begin, end);
 }

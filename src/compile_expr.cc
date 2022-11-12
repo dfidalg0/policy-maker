@@ -83,29 +83,6 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
             // Curto circuito para o operador lógico OR
             if (op == Op::lor) {
-                if (
-                    (Lconst && Lconst->is_truthy()) ||
-                    (Rconst && Rconst->is_truthy())
-                ) {
-                    filter->push_back(
-                        BPF_STMT(BPF_LD | BPF_IMM, 1)
-                    );
-                    break;
-                }
-
-                // Nunca acontecerá o caso com duas constantes, pois isso já
-                // foi otimizado anteriormente
-
-                // L é uma constante falsa
-                if (Lconst) {
-                    return compile_expr(R.get());
-                }
-
-                // R é uma constante falsa
-                if (Rconst) {
-                    return compile_expr(L.get());
-                }
-
                 auto Rfilter = compile_expr(R.get());
 
                 auto Lfilter = compile_expr(L.get());
@@ -124,29 +101,6 @@ std::unique_ptr<FilterVector> compile_expr(Expr * expr) {
 
             // Curto circuito para o operador lógico AND
             if (op == Op::land) {
-                if (
-                    (Lconst && !Lconst->is_truthy()) ||
-                    (Rconst && !Rconst->is_truthy())
-                ) {
-                    filter->push_back(
-                        BPF_STMT(BPF_LD | BPF_IMM, 0)
-                    );
-                    break;
-                }
-
-                // Nunca acontecerá o caso com duas constantes, pois isso já
-                // foi otimizado anteriormente
-
-                // L é uma constante verdadeira
-                if (Lconst) {
-                    return compile_expr(R.get());
-                }
-
-                // R é uma constante verdadeira
-                if (Rconst) {
-                    return compile_expr(L.get());
-                }
-
                 auto Rfilter = compile_expr(R.get());
 
                 auto Lfilter = compile_expr(L.get());
