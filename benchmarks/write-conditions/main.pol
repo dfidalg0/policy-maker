@@ -1,0 +1,6 @@
+policy main {
+    allow {
+        write if :fd == 2 || :fd == 1,
+        exit
+    }
+}
