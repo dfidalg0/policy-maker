@@ -17,7 +17,7 @@ def reject_outliers(data: NDArray, m=5.189) -> NDArray:
 def run_benchmark(name: str) -> None:
     dir = ROOT / 'benchmarks' / name
 
-    if not dir.exists():
+    if not dir.exists() or name == 'results':
         raise ValueError(f'No such benchmark: {name}')
 
     print('Compiling filter...')
