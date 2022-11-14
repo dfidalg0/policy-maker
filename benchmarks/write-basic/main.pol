@@ -1,0 +1,6 @@
+policy main {
+    allow {
+        write,
+        exit
+    }
+}
