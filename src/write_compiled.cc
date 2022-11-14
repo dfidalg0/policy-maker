@@ -1,6 +1,9 @@
 #include <write_compiled.hh>
 #include <errors.hh>
 #include <regex>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 class Wrapper {
 public:
@@ -24,38 +27,50 @@ struct File {
 File get_name_and_extension(const std::string &filename) {
     auto idx = filename.rfind(".");
 
+    if (idx == std::string::npos) {
+        throw std::runtime_error("Invalid filename");
+    }
+
     return {
         .name = filename.substr(0, idx),
         .extension = filename.substr(1 + idx)
     };
 }
 
-void write_compiled(const std::string filename, std::string target, CompileResult &result) {
+void write_compiled(std::string pathname, std::string target, CompileResult &result) {
     std::regex re(R"([a-zA-Z_][a-zA-Z0-9_]*)");
 
     if (!std::regex_match(target, re)) {
         throw std::runtime_error("Invalid function name: " + target);
     }
 
-    std::ofstream file(filename);
+    std::string filename = fs::path(pathname).filename();
 
-    auto [name, ext] = get_name_and_extension(filename);
+    if (filename.empty()) {
+        filename = "filter.c";
+        pathname = fs::path(pathname).append(filename).string();
+    }
+
+    std::ofstream file(pathname);
+
+    auto [name, ext] = get_name_and_extension(pathname);
 
     std::string header_ext =
         (ext == "cp" || ext == "cpp" || ext == "cc" || ext == "c++")
             ? ".hh"
             : ".h";
 
-    auto header_filename = name + header_ext;
+    auto header_pathname = name + header_ext;
+    std::string header_filename = fs::path(header_pathname).filename();
 
-    std::ofstream header(header_filename);
+    std::ofstream header(header_pathname);
 
     if (!file.is_open()) {
-        throw FileNotFoundError(filename);
+        throw FileNotFoundError(pathname);
     }
 
     if (!header.is_open()) {
-        throw FileNotFoundError(header_filename);
+        throw FileNotFoundError(header_pathname);
     }
 
     std::string flag = "0";
