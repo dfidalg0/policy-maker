@@ -39,7 +39,7 @@ void run(bool filter) {
     }
 
     for (auto i = 0; i < times; ++i) {
-        std::cerr << durations[i] << '\n';
+        std::cerr << durations[i] << std::endl;
     }
 
     munmap(durations, times * sizeof(long));
@@ -47,7 +47,7 @@ void run(bool filter) {
 
 int main() {
     run(false);
-    std::cerr << "---\n";
+    std::cerr << "---" << std::endl;
     run(true);
 
     return 0;

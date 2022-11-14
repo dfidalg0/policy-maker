@@ -1,3 +1,5 @@
 filter.cc
 filter.hh
 main
+results/*
+!results/.gitkeep

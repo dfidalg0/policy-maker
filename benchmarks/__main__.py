@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 import subprocess as sp
 from matplotlib import pyplot as plt
 from pathlib import Path
@@ -6,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 
 
-def reject_outliers(data, m=2.):
+def reject_outliers(data: NDArray, m=5.189) -> NDArray:
     d = np.abs(data - np.median(data))
     mdev = np.median(d)
     s = d/mdev if mdev else 0.
@@ -15,6 +16,9 @@ def reject_outliers(data, m=2.):
 
 def run_benchmark(name: str) -> None:
     dir = ROOT / 'benchmarks' / name
+
+    if not dir.exists():
+        raise ValueError(f'No such benchmark: {name}')
 
     print('Compiling filter...')
 
@@ -47,8 +51,12 @@ def run_benchmark(name: str) -> None:
     fstd = filter.std()
     nstd = nofilter.std()
 
-    print('Sem filtro: {:.2f} ± {:.2f} ns'.format(nmean, nstd))
-    print('Com filtro: {:.2f} ± {:.2f} ns'.format(fmean, fstd))
+    RESULTS = ROOT / 'benchmarks' / 'results'
+
+    with open(RESULTS / f'{name}.csv', 'w') as f:
+        print('Variante,Média,Desvio Padrão,Tamanho da amostra', file=f)
+        print(f'Sem filtro,{nmean:.2f},{nstd:.2f},{nofilter.size}', file=f)
+        print(f'Com filtro,{fmean:.2f},{fstd:.2f},{filter.size}', file=f)
 
     fig, axis = plt.subplots(1, 2, tight_layout=True, figsize=(10, 5))
 
@@ -74,7 +82,7 @@ def run_benchmark(name: str) -> None:
 
     fig.suptitle(name)
 
-    plt.show()
+    plt.savefig(RESULTS / f'{name}.pdf')
 
 
 if __name__ == "__main__":
