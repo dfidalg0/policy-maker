@@ -1,6 +1,6 @@
 /**
- * Essa política permite a execução de programas básicos em Python 3 em modo não
- * interativo.
+ * This policy allows the execution of basic Python 3 programs in
+ * non-interactive mode.
  */
 policy main {
     allow {
@@ -42,7 +42,8 @@ policy main {
 
 
 /**
- * Esta política permite a execução do Python em modo interativo.
+ * This policy allows the execution of Python 3 programs in interactive
+ * mode.
  */
 policy interactive {
     apply main;

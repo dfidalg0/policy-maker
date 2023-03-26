@@ -1,6 +1,6 @@
 /*
- * Essa política permite a execução de programas básicos em NodeJS em modo não
- * interativo.
+ * This policy allows the execution of basic NodeJS programs in non-interactive
+ * mode.
  */
 policy main {
     allow {
@@ -50,7 +50,8 @@ policy main {
 }
 
 /**
- * Esta política permite a execução do NodeJS em modo interativo.
+ * This policy allows the execution of basic NodeJS programs in interactive
+ * mode.
  */
 policy interactive {
     apply main;
