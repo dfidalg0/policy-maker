@@ -121,16 +121,20 @@ int main(int argc, char const * argv[]) {
 
         auto args = options.rest();
 
-        if (!args.size()) {
-            if (options.has("output") && !options.has("dry-run")) {
-                write_compiled(options.get("output"), options.get("target"), compile_result);
-            }
-
-            cout << "Code compiled successfully" << endl;
-            return 0;
+        if (args.size()) {
+            return run_seccomp(prog, args);
         }
 
-        return run_seccomp(prog, args);
+        if (options.has("output") && !options.has("dry-run")) {
+            write_compiled(
+                options.get("output"),
+                options.get("target"),
+                compile_result
+            );
+        }
+
+        cout << "Code compiled successfully" << endl;
+        return 0;
     }
     catch (FileNotFoundError e) {
         cerr << e.what() << endl;
