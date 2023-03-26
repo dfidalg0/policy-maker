@@ -51,7 +51,7 @@ std::unique_ptr<AnalysisResult> semantics::analyze(std::string filename, std::se
 
 std::unique_ptr<AnalysisResult> semantics::analyze(syntax::Program *prog, std::set<std::string> referrers) {
     // Primeiro, definimos o escopo global
-    auto global_scope = std::make_shared<semantics::Scope>();
+    auto global_scope = std::make_shared<semantics::Scope>(prog->filename());
 
     auto filename = prog->filename();
 

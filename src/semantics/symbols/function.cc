@@ -112,8 +112,7 @@ std::shared_ptr<syntax::Expr> Function::call(std::vector<std::shared_ptr<syntax:
 
     if (args.size() < _args.size()) {
         throw CompilerError(
-            "Invalid number of arguments. Expected" + std::to_string(args.size()) + "\n"
-            "  at function " + name()
+            "Invalid number of arguments. Expected" + std::to_string(args.size())
         );
     }
 
@@ -125,9 +124,15 @@ std::shared_ptr<syntax::Expr> Function::call(std::vector<std::shared_ptr<syntax:
         local_scope->add(var);
     }
 
-    auto result = local_scope->evaluate(_body);
+    try {
+        auto result = local_scope->evaluate(_body);
+        delete local_scope;
+        return result;
+    }
+    catch (CompilerError& e) {
+        delete local_scope;
 
-    delete local_scope;
-
-    return result;
+        throw e.push(_body->begin(), "function body")
+            .build(_decl_scope->file());
+    }
 }

@@ -1,0 +1,7 @@
+from './error-another-module.pol' import test;
+
+policy main {
+    allow {
+        write if test(null),
+    }
+}

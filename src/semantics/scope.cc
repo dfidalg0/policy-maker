@@ -202,7 +202,7 @@ std::shared_ptr<syntax::Expr> Scope::evaluate(std::shared_ptr<syntax::Expr> expr
                 return function->call(evaluated_args);
             }
             catch (CompilerError &e) {
-                throw e.push(call->begin(), "function call");
+                throw e.push(call->begin(), "function call '" + name + "'");
             }
         }
         case syntax::Expr::Kind::variable: {
